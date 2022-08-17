@@ -39,7 +39,7 @@ using LinearAlgebra
 
 # Define system: planar double integrator
 n = 4 # State dimension
-m = 2 # Constrol dimension
+m = 2 # Control dimension
 f(x) = vcat(x[3:4], zeros(2)) # Nominal drift dynamics
 g(x) = vcat(zeros(2,2), diagm(ones(2))) # Control directions
 Σ = ControlAffineSystem(n, m, f, g) # Construct a control affine system 
@@ -113,4 +113,4 @@ or the estimates of the uncertain parameters
 ![](https://github.com/maxhcohen/AdaptiveCBFToolbox.jl/blob/main/figures/dbl_int_params.png)
 
 ## Questions and Contributions
-If you have any questions about the toolbox, have suggestions for improvements, or would like to make your own contribution to the toolbox feel free to reach out to maxcohen@bu.edu.
+If you have any questions about the toolbox, have suggestions for improvements, or would like to make your own contribution to the toolbox feel free to raise an issue, make a pull request, or reach out to maxcohen@bu.edu.

@@ -6,7 +6,7 @@ This toolbox is intended to serve as an extension of [CBFToolbox.jl](https://git
 
 >M. H. Cohen and C. Belta, "[High order robust adaptive control barrier functions and exponentially stabilizing adaptive control Lyapunov functions](https://arxiv.org/abs/2203.01999)," in Proceedings of the American Control Conference, pp. 2233-2238, 2022.
 
-The scripts in the examples folder allow one to reproduce the results from the above paper.
+The scripts in the [examples](https://github.com/maxhcohen/AdaptiveCBFToolbox.jl/tree/main/examples) folder allow one to reproduce the results from the above paper. This package is under active development, so things may change somewhat frequently.
 
 
 The toolbox essentially adds to [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2) a suite of parameter estimation routines that can be used to define adaptive controllers that stabilize an uncertain dynamical system while satisfying safety constraints expressed as [CBFs](https://arxiv.org/abs/1903.11199) or [high order CBFs](https://ieeexplore.ieee.org/abstract/document/9516971). The parameter estimation algorithms used in this toolbox are based on those developed in

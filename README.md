@@ -17,6 +17,19 @@ The toolbox essentially adds to [CBFToolbox.jl](https://github.com/maxhcohen/CBF
 
 >A. Parikh, R. Kamalapurkar, and W. E. Dixon, "[Integral concurrent learning: Adaptive control with parameter convergence using finite excitation](https://onlinelibrary.wiley.com/doi/full/10.1002/acs.2945)," International Journal of Adaptive Control and Signal Processing, vol. 33, no. 12, pp. 1775-1787, 2019.
 
+## Installation
+To download this package open the Julia REPL, enter the package manager (type `]` into the REPL) and run
+```
+add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
+```
+
+Note that this package depends on another unregistered package [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2), which in turn depends on yet another unregistered package [VectorFieldPlots.jl](https://github.com/maxhcohen/VectorFieldPlots.jl). Julia can sometimes run into issues when there's nested dependencies on unregistered packages; one way to get around this is to add all other unregistered dependencies first and then add this package:
+```
+add https://github.com/maxhcohen/VectorFieldPlots.jl.git
+add https://github.com/maxhcohen/CBFToolbox.jl.git#dev2
+add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
+```
+
 ## Tutorial
 The usage of this package is similar to that of [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2): we define a `ControlAffineSystem` and a `Controller` based on a `ControlLyapunovFunction`, `ControlBarrierFunction`, or both, and then run a simulation using a `Simulation` object. This package integrates the new abstract types `UncertainParameters` and `UpdateLaw` into the previous workflow that allows for specifying unknown parameters of the underlying system and a parameter estimator to learn such parameters, respectively. The following code shows a simple example of the typical workflow.
 ```julia

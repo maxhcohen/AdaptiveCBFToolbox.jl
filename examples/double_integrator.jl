@@ -87,7 +87,7 @@ begin
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     display(fig)
-    savefig(fig, "dbl_int_traj.png")
+    # savefig(fig, "dbl_int_traj.png")
 end
 
 # Plot trajectory of parameter estimates
@@ -98,7 +98,7 @@ begin
     xlabel!(L"t")
     ylabel!(L"\hat{\theta}(t)")
     display(fig)
-    savefig(fig, "dbl_int_params.png")
+    # savefig(fig, "dbl_int_params.png")
 end
 
 # Plot trajectory of estimation error

@@ -41,7 +41,7 @@ k0 = ACLFQuadProg(Σ, P, CLF)
 # Define an ICL history stack and update law
 Γc = 10.0
 M = 20
-dt = 0.01
+dt = 0.1
 Δt = 0.5
 H = ICLHistoryStack(M, Σ, P)
 τ = ICLGradientUpdateLaw(Γc, dt, Δt, H)
@@ -69,7 +69,7 @@ x0 = [-2.5, 2.5, 0.0, 0.0]
 # Simulate
 T = 20.0
 S = Simulation(T)
-sol = S(Σ, P, k, τCLF, τ, x0, θ̂0)
+@time sol = S(Σ, P, k, τCLF, τ, x0, θ̂0)
 
 # Plot system states
 begin

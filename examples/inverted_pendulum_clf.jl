@@ -36,7 +36,7 @@ k = ACLFQuadProg(Σ, P, CLF)
 # Define an ICL history stack and update law
 Γc = 10.0
 M = 20
-dt = 0.01
+dt = 0.1
 Δt = 0.5
 H = ICLHistoryStack(M, Σ, P)
 τ = ICLGradientUpdateLaw(Γc, dt, Δt, H)

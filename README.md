@@ -26,7 +26,7 @@ add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
 Note that this package depends on another unregistered package [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2), which in turn depends on yet another unregistered package [VectorFieldPlots.jl](https://github.com/maxhcohen/VectorFieldPlots.jl). Julia can sometimes run into issues when there's nested dependencies on unregistered packages; one way to get around this is to add all other unregistered dependencies first and then add this package:
 ```
 add https://github.com/maxhcohen/VectorFieldPlots.jl.git
-add https://github.com/maxhcohen/CBFToolbox.jl.git#dev2
+add https://github.com/maxhcohen/CBFToolbox.jl.git
 add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
 ```
 

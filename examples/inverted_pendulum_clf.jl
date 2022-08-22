@@ -61,8 +61,6 @@ end
 # Plot evolution of system's configuration
 begin
     fig = plot(sol, idxs=(1,2), label="")
-    plot_circle!(xo1[1], xo1[2], ro1)
-    plot_circle!(xo2[1], xo2[2], ro2)
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     display(fig)

@@ -43,6 +43,7 @@ export DCLGradientUpdateLaw
 export DCLLeastSquaresUpdateLaw
 export ICLHistoryStack
 export ICLGradientUpdateLaw
+export ICLLeastSquaresUpdateLaw
 
 # Source code
 include("matched_parameters.jl")
@@ -62,5 +63,6 @@ include("dcl_least_squares_update.jl")
 include("icl_history_stack.jl")
 include("integration_utils.jl")
 include("icl_gradient_update_law.jl")
+include("icl_least_squares_update.jl")
 
 end # module

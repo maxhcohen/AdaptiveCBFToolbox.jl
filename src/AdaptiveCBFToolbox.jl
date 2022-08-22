@@ -40,6 +40,7 @@ export GradientUpdateLaw
 export LeastSquaresUpdateLaw
 export DCLHistoryStack
 export DCLGradientUpdateLaw
+export DCLLeastSquaresUpdateLaw
 export ICLHistoryStack
 export ICLGradientUpdateLaw
 
@@ -57,7 +58,9 @@ include("gradient_update_law.jl")
 include("least_squares_update_law.jl")
 include("dcl_history_stack.jl")
 include("dcl_gradient_update_law.jl")
+include("dcl_least_squares_update.jl")
 include("icl_history_stack.jl")
+include("integration_utils.jl")
 include("icl_gradient_update_law.jl")
 
 end # module

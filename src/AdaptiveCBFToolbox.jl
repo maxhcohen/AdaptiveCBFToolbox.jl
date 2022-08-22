@@ -34,6 +34,7 @@ export UnmatchedParameters
 export ACLFQuadProg
 export ISSaCLFQuadProg
 export RACBFQuadProg
+export ISSfaCBFQuadProg
 export CLFUpdateLaw
 export GradientUpdateLaw
 export LeastSquaresUpdateLaw
@@ -49,6 +50,8 @@ include("aclf_quad_prog.jl")
 include("iss_aclf_quad_prog.jl")
 include("racbf_quad_prog.jl")
 include("horacbf_quad_prog.jl")
+include("issf_acbf_quad_prog.jl")
+include("high_order_issf_acbf_qp.jl")
 include("clf_update_law.jl")
 include("gradient_update_law.jl")
 include("least_squares_update_law.jl")

@@ -1,4 +1,3 @@
-
 """
     RACBFQuadProg <: AdaptiveController
 

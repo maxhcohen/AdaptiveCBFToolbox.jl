@@ -32,6 +32,7 @@ export plot_circle!
 export MatchedParameters
 export UnmatchedParameters
 export ACLFQuadProg
+export ISSaCLFQuadProg
 export RACBFQuadProg
 export CLFUpdateLaw
 export GradientUpdateLaw
@@ -45,6 +46,7 @@ export ICLGradientUpdateLaw
 include("matched_parameters.jl")
 include("unmatched_parameters.jl")
 include("aclf_quad_prog.jl")
+include("iss_aclf_quad_prog.jl")
 include("racbf_quad_prog.jl")
 include("horacbf_quad_prog.jl")
 include("clf_update_law.jl")

@@ -1,4 +1,3 @@
-
 """
     ACLFQuadProg <: AdaptiveController
 

@@ -4,7 +4,8 @@ using AdaptiveCBFToolbox
 using LinearAlgebra
 using Plots
 using LaTeXStrings
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="")
+julia_palette = deleteat!(distinguishable_colors(10, [c for c in palette(:julia)]), 5:6)
+default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=julia_palette)
 
 # Define system: planar double integrator
 n = 4
@@ -69,7 +70,7 @@ x0 = [-2.5, 2.5, 0.0, 0.0]
 # Simulate
 T = 20.0
 S = Simulation(T)
-@time sol = S(Σ, P, k, τCLF, τ, x0, θ̂0)
+sol = S(Σ, P, k, τCLF, τ, x0, θ̂0)
 
 # Plot system states
 begin
@@ -87,18 +88,19 @@ begin
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     display(fig)
-    # savefig(fig, "dbl_int_traj.png")
+    savefig(fig, "dbl_int_traj.png")
 end
 
 # Plot trajectory of parameter estimates
 begin
-    fig = plot(sol, idxs = Σ.n + 1 : Σ.n + P.p, label=[L"\hat{\theta}_1^h" L"\hat{\theta}_2^h"], dpi=200)
-    plot!(sol, idxs = Σ.n + P.p + 1 : Σ.n + 2*P.p, label=[L"\hat{\theta}_1^V" L"\hat{\theta}_2^V"])
+    fig = plot(dpi=200)
+    plot!(sol, idxs = Σ.n + 1 : Σ.n + P.p, label=[L"\hat{\theta}_{1,\mathrm{cbf}}" L"\hat{\theta}_{2,\mathrm{cbf}}"])
+    plot!(sol, idxs = Σ.n + P.p + 1 : Σ.n + 2*P.p, label=[L"\hat{\theta}_{1,\mathrm{clf}}" L"\hat{\theta}_{2,\mathrm{clf}}"])
     hline!(θ, c=:black, ls=:dot)
     xlabel!(L"t")
     ylabel!(L"\hat{\theta}(t)")
     display(fig)
-    # savefig(fig, "dbl_int_params.png")
+    savefig(fig, "dbl_int_params.png")
 end
 
 # Plot trajectory of estimation error

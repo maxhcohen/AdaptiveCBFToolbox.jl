@@ -4,7 +4,8 @@ using AdaptiveCBFToolbox
 using LinearAlgebra
 using Plots
 using LaTeXStrings
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="")
+julia_palette = deleteat!(distinguishable_colors(10, [c for c in palette(:julia)]), 5:6)
+default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=julia_palette)
 
 # Define system: inverted pendulum
 mass = 0.7

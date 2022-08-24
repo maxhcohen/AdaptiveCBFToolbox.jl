@@ -31,6 +31,7 @@ export plot_circle!
 # Export AdaptiveCBFToolbox types
 export MatchedParameters
 export UnmatchedParameters
+export CustomAdaptiveController
 export ACLFSontag
 export ACLFQuadProg
 export ISSaCLFQuadProg
@@ -49,6 +50,7 @@ export ICLLeastSquaresUpdateLaw
 # Source code
 include("matched_parameters.jl")
 include("unmatched_parameters.jl")
+include("custom_adaptive_controller.jl")
 include("aclf_sontag.jl")
 include("aclf_quad_prog.jl")
 include("iss_aclf_quad_prog.jl")

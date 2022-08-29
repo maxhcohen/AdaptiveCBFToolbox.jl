@@ -20,7 +20,7 @@ g(x) = vcat(zeros(2,2), diagm(ones(2)))
 
 # Define the regressor function and construct a MatchedParameters object
 φ(x) = -diagm(x[3:4]*norm(x[3:4]))
-P = MatchedParameters(θ, φ, 𝚯)
+P = MatchedParameters(θ, φ)
 
 # Define a CLF and an adaptive CLF-QP controller for reaching the origin
 Q = [2.0 0.0 1.0 0.0; 0.0 2.0 0.0 1.0; 1.0 0.0 1.0 0.0; 0.0 1.0 0.0 1.0]

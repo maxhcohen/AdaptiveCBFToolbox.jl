@@ -172,7 +172,7 @@ function (S::Simulation)(
 
     # Set up ODEProblem and solve
     problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
 end
@@ -216,7 +216,7 @@ function (S::Simulation)(
 
     # Set up ODEProblem and solve
     problem = ODEProblem(right_hand_side, vcat(x, θ̂, P.ϑ), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
 end
@@ -263,7 +263,7 @@ function (S::Simulation)(
 
     # Set up ODEProblem and solve
     problem = ODEProblem(right_hand_side, vcat(x, θ̂, θ̂, P.ϑ), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
 end

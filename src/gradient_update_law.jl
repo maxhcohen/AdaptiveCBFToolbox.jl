@@ -80,7 +80,7 @@ function (S::Simulation)(
         return vcat(ẋ, θ̂̇)
     end
     problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    trajectory = solve(problem)
 
     return trajectory
 end
@@ -123,7 +123,7 @@ function (S::Simulation)(
         return vcat(ẋ, θ̂̇)
     end
     problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    trajectory = solve(problem)
 
     return trajectory
 end

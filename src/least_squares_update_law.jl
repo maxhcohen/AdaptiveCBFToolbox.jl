@@ -100,7 +100,7 @@ function (S::Simulation)(
     end
     Γ = P.p == 1 ? Γ : vec(Γ)
     problem = ODEProblem(right_hand_side, vcat(x, θ̂, Γ), [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    trajectory = solve(problem)
 
     return trajectory
 end
@@ -150,7 +150,7 @@ function (S::Simulation)(
     end
     Γ = P.p == 1 ? Γ : vec(Γ)
     problem = ODEProblem(right_hand_side, vcat(x, θ̂, Γ), [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    trajectory = solve(problem)
 
     return trajectory
 end

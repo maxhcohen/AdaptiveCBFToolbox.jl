@@ -2,10 +2,6 @@
 using Revise
 using AdaptiveCBFToolbox
 using LinearAlgebra
-using Plots
-using LaTeXStrings
-julia_palette = deleteat!(distinguishable_colors(10, [c for c in palette(:julia)]), 5:6)
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=julia_palette)
 
 # Define system: inverted pendulum
 mass = 0.7
@@ -37,7 +33,7 @@ k0 = ACLFQuadProg(Σ, P, CLF)
 # Define an ICL history stack and update law
 Γc = 10.0
 M = 20
-dt = 0.1
+dt = 0.5
 Δt = 0.5
 H = ICLHistoryStack(M, Σ, P)
 τ = ICLGradientUpdateLaw(Γc, dt, Δt, H)
@@ -61,6 +57,9 @@ T = 15.0
 S = Simulation(T)
 sol = S(Σ, P, k, τCLF, τ, x0, θ̂0)
 
+using Plots
+using LaTeXStrings
+default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=:julia)
 # Plot system states
 begin
     fig = plot(sol, idxs=1:Σ.n, label="")

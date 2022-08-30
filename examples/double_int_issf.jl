@@ -2,9 +2,6 @@
 using Revise
 using AdaptiveCBFToolbox
 using LinearAlgebra
-using Plots
-using LaTeXStrings
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="")
 
 # Define system: planar double integrator
 n = 4
@@ -55,7 +52,7 @@ kISSf = ISSfaCBFQuadProg(Σ, P, HOCBFs, kISS, ε0, λ)
 # Define an ICL history stack and update law
 Γ = 10.0
 M = 20
-dt = 0.1
+dt = 0.5
 Δt = 0.5
 H = ICLHistoryStack(M, Σ, P)
 τ = ICLGradientUpdateLaw(Γ, dt, Δt, H)
@@ -69,6 +66,9 @@ T = 15.0
 S = Simulation(T)
 sol = S(Σ, P, kISSf, τ, x0, θ̂0)
 
+using Plots
+using LaTeXStrings
+default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=:julia)
 # Plot system states
 begin
     fig = plot(sol, idxs=1:Σ.n, label="")

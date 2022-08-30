@@ -35,36 +35,8 @@ function CLFUpdateLaw(
     Σ::ControlAffineSystem,
     CLF::ControlLyapunovFunction,
     )
-    function update_law(x)
-        LgV = CBFToolbox.control_lie_derivative(CLF, Σ, x)
-        LFV = LgV*P.φ(x)
 
-        return Γ * LFV'
-    end
-
-    return CLFUpdateLaw(Γ, update_law)
-end 
-
-"""
-    CLFUpdateLaw(
-        Γ::Union{Float64, Matrix{Float64}},
-        P::UnmatchedParameters,
-        Σ::ControlAffineSystem,
-        CLF::ControlLyapunovFunction,
-        )
-
-Construct a `CLFUpdateLaw` for a system with matched parameters.
-"""
-function CLFUpdateLaw(
-    Γ::Union{Float64, Matrix{Float64}},
-    P::UnmatchedParameters,
-    CLF::ControlLyapunovFunction,
-    )
-    function update_law(x)
-        LFV = regressor_lie_derivative(CLF, P, x)
-
-        return Γ * LFV'
-    end
+    update_law(x) = Γ * regressor_lie_derivative(CLF, Σ, P, x)'
 
     return CLFUpdateLaw(Γ, update_law)
 end 
@@ -90,61 +62,32 @@ function (S::Simulation)(
     θ̂::Union{Float64, Vector{Float64}}
     )
     # Construct right-hand-side
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1:Σ.n]
-        θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
-
-        # Dynamics
-        ẋ = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
-
-        # Update law
-        θ̂̇ = τ(x)
-
-        return vcat(ẋ, θ̂̇)
-    end
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf])
+    rhs!(dX, X, p, t) = rhs_aclf!(dX, X, p, t, Σ, P, k, τ)
+    problem = ODEProblem(rhs!, vcat(x, θ̂), S.tf)
     trajectory = solve(problem)
 
     return trajectory
 end
 
-"""
-    (S::Simulation)(
-        Σ::ControlAffineSystem,
-        P::UnmatchedParameters,
-        k::AdaptiveController,
-        τ::CLFUpdateLaw,
-        x::Union{Float64, Vector{Float64}},
-        θ̂::Union{Float64, Vector{Float64}}
-        )
+"RHS function to pass to ODE solver when using adaptive CLF."
+function rhs_aclf!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::AdaptiveController, τ::CLFUpdateLaw)
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
 
-Simulate a system with unmatched parameters under a CLF-based controller.
-"""
-function (S::Simulation)(
-    Σ::ControlAffineSystem,
-    P::UnmatchedParameters,
-    k::AdaptiveController,
-    τ::CLFUpdateLaw,
-    x::Union{Float64, Vector{Float64}},
-    θ̂::Union{Float64, Vector{Float64}}
-    )
-    # Construct right-hand-side
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1:Σ.n]
-        θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
-
-        # Dynamics
-        ẋ = Σ.f(x) + P.F(x)*P.θ + Σ.g(x)*k(x,θ̂)
-
-        # Update law
-        θ̂̇ = τ(x)
-
-        return vcat(ẋ, θ̂̇)
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
     end
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf])
-    trajectory = solve(problem)
 
-    return trajectory
+    # Update law
+    if P.p == 1
+        dX[end] = τ(x)
+    else
+        dX[Σ.n+1 : end] = τ(x)
+    end
+
+    return nothing
 end

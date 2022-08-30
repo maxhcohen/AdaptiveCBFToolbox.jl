@@ -2,10 +2,6 @@
 using Revise
 using AdaptiveCBFToolbox
 using LinearAlgebra
-using Plots
-using LaTeXStrings
-julia_palette = deleteat!(distinguishable_colors(10, [c for c in palette(:julia)]), 5:6)
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=julia_palette)
 
 # Define system: planar double integrator
 n = 4
@@ -42,7 +38,7 @@ k0 = ACLFQuadProg(Σ, P, CLF)
 # Define an ICL history stack and update law
 Γc = 10.0
 M = 20
-dt = 0.1
+dt = 0.5
 Δt = 0.5
 H = ICLHistoryStack(M, Σ, P)
 τ = ICLGradientUpdateLaw(Γc, dt, Δt, H)
@@ -72,6 +68,9 @@ T = 20.0
 S = Simulation(T)
 sol = S(Σ, P, k, τCLF, τ, x0, θ̂0)
 
+using Plots
+using LaTeXStrings
+default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=:julia)
 # Plot system states
 begin
     fig = plot(sol, idxs=1:Σ.n, label="")
@@ -88,7 +87,7 @@ begin
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     display(fig)
-    savefig(fig, "dbl_int_traj.png")
+    # savefig(fig, "dbl_int_traj.png")
 end
 
 # Plot trajectory of parameter estimates
@@ -100,7 +99,7 @@ begin
     xlabel!(L"t")
     ylabel!(L"\hat{\theta}(t)")
     display(fig)
-    savefig(fig, "dbl_int_params.png")
+    # savefig(fig, "dbl_int_params.png")
 end
 
 # Plot trajectory of estimation error

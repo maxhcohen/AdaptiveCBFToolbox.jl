@@ -51,8 +51,7 @@ Update stack with current data using singular value maximizing algorithm.
 """
 function update_stack!(stack::ICLHistoryStack, Δx, f, F, g)
     # Check if current data is different enough from older data
-    diff = stack_difference(stack, F)
-    if diff >= stack.ε
+    if stack_difference(stack, F) >= stack.ε
         # Check if stack is full yet
         if stack.idx < stack.M 
             # If not full bump stack index by 1 and save current data to new index
@@ -86,12 +85,7 @@ end
 
 Check if new data is different enough from old data.
 """
-function stack_difference(stack::ICLHistoryStack, Fnew)
-    Fold = stack.F[stack.idx]
-    diff = norm(Fnew - Fold)^2 / norm(Fnew)^2
-
-    return diff
-end
+stack_difference(stack::ICLHistoryStack, Fnew) = norm(Fnew - stack.F[stack.idx])^2 / norm(Fnew)^2
 
 """
     save_data!(idx::Int, stack::ICLHistoryStack, Δx, f, F, g)

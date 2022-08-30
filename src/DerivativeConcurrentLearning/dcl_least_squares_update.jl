@@ -137,23 +137,29 @@ function (S::Simulation)(
     )
 
     # Construct right-hand-side function
-    function right_hand_side(X, p, t)
+    function rhs!(dX, X, p, t)
         # Pull out states
         x = Σ.n == 1 ? X[1] : X[1:Σ.n]
         θ̂ = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
-        Γ = P.p == 1 ? X[end] : X[Σ.n + P.p + 1 : end]
-        Γ = P.p == 1 ? Γ : reshape(Γ, P.p, P.p)
+        Γ = P.p == 1 ? X[end] : reshape(X[Σ.n + P.p + 1 : end], P.p, P.p)
 
         # Dynamics
-        u = k(x, θ̂)
-        ẋ = Σ.f(x) + Σ.g(x)*(u + P.φ(x)*P.θ)
+        if Σ.n == 1
+            dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        else
+            dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        end
 
         # Update law
-        θ̂̇ = τ(θ̂, Γ)
-        Γ̇ = τ(Γ)
-        Γ̇ = P.p == 1 ? Γ̇ : vec(Γ̇)
+        if P.p == 1
+            dX[Σ.n + 1] = τ(θ̂, Γ)
+            dX[end] = τ(Γ)
+        else
+            dX[Σ.n + 1 : Σ.n + P.p] = τ(θ̂, Γ)
+            dX[Σ.n + P.p + 1 : end] = vec(τ(Γ))
+        end
 
-        return vcat(ẋ, θ̂̇, Γ̇)
+        return nothing
     end
 
     # Set up parameter dictionary
@@ -166,7 +172,7 @@ function (S::Simulation)(
 
     # Set up ODEProblem and solve
     Γ = P.p == 1 ? Γ : vec(Γ)
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂, Γ), [S.t0, S.tf], p)
+    problem = ODEProblem(rhs!, vcat(x, θ̂, Γ), S.tf, p)
     trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory

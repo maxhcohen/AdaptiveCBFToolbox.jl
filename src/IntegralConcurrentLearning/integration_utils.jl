@@ -4,10 +4,7 @@
 Integrate regressor along trajectory `x(t)` from time `tp` to time `t`.
 """
 function integrate_regressor(x, t, tp, Σ::ControlAffineSystem, P::MatchedParameters)
-    prob = IntegralProblem((t,p) -> Σ.g(x(t))*P.φ(x(t)), tp, t)
-    F = solve(prob, HCubatureJL(), reltol=1e-3,abstol=1e-3)
-
-    return F 
+    return solve(IntegralProblem((t,p) -> Σ.g(x(t))*P.φ(x(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
 end
 
 """
@@ -18,9 +15,7 @@ Integrate state derivative `ẋ` along trajectory `x(t)` from time `tp` to time 
 We don't perform any numerical integration here, just compute `Δx(t) = x(t) - x(t-Δt)`.
 """
 function integrate_state_derivative(x, t, tp)
-    Δx = x(t) - x(tp)
-
-    return Δx
+    return  x(t) - x(tp)
 end
 
 """
@@ -29,10 +24,7 @@ end
 Integrate drift dynamics along trajectory `x(t)` from time `tp` to time `t`.
 """
 function integrate_drift(x, t, tp, Σ::ControlAffineSystem)
-    prob = IntegralProblem((t,p) -> Σ.f(x(t)), tp, t)
-    f = solve(prob, HCubatureJL(), reltol=1e-3,abstol=1e-3)
-
-    return f
+    return solve(IntegralProblem((t,p) -> Σ.f(x(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
 end
 
 """
@@ -43,22 +35,13 @@ end
 Integrate control directions multiplied by control input along trajectory `x(t)`.
 """
 function integrate_control(x, θ̂, t, tp, Σ::ControlAffineSystem, k::AdaptiveController)
-    prob = IntegralProblem((t,p) -> Σ.g(x(t))*k(x(t),θ̂(t)), tp, t)
-    g = solve(prob, HCubatureJL(), reltol=1e-3,abstol=1e-3)
-
-    return g
+    return solve(IntegralProblem((t,p) -> Σ.g(x(t))*k(x(t),θ̂(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
 end
 
 function integrate_control(x, θ̂, ϑ, t, tp, Σ::ControlAffineSystem, k::RACBFQuadProg)
-    prob = IntegralProblem((t,p) -> Σ.g(x(t))*k(x(t),θ̂(t),ϑ(t)), tp, t)
-    g = solve(prob, HCubatureJL(), reltol=1e-3,abstol=1e-3)
-
-    return g
+    return solve(IntegralProblem((t,p) -> Σ.g(x(t))*k(x(t),θ̂(t),ϑ(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
 end
 
 function integrate_control(x, θ̂cbf, θ̂clf, ϑ, t, tp, Σ::ControlAffineSystem, k::RACBFQuadProg)
-    prob = IntegralProblem((t,p) -> Σ.g(x(t))*k(x(t),θ̂cbf(t),θ̂clf(t),ϑ(t)), tp, t)
-    g = solve(prob, HCubatureJL(), reltol=1e-3,abstol=1e-3)
-
-    return g
+    return solve(IntegralProblem((t,p) -> Σ.g(x(t))*k(x(t),θ̂cbf(t),θ̂clf(t),ϑ(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
 end

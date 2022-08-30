@@ -90,8 +90,6 @@ function ICLLeastSquaresUpdateLaw(
 end
 
 function ICLLeastSquaresUpdateLaw(
-    Σ::ControlAffineSystem,
-    P::MatchedParameters, 
     stack::ICLHistoryStack, 
     dt::Float64,
     Δt::Float64
@@ -99,12 +97,10 @@ function ICLLeastSquaresUpdateLaw(
     β = 0.0
     Γ̄ = Inf
 
-    return ICLLeastSquaresUpdateLaw(Σ, P, stack, dt, Δt, β, Γ̄)
+    return ICLLeastSquaresUpdateLaw(stack, dt, Δt, β, Γ̄)
 end
 
 function ICLLeastSquaresUpdateLaw(
-    Σ::ControlAffineSystem,
-    P::MatchedParameters, 
     stack::ICLHistoryStack, 
     dt::Float64,
     Δt::Float64,
@@ -112,7 +108,7 @@ function ICLLeastSquaresUpdateLaw(
     )
     Γ̄ = Inf
 
-    return ICLLeastSquaresUpdateLaw(Σ, P, stack, dt, Δt, β, Γ̄)
+    return ICLLeastSquaresUpdateLaw(stack, dt, Δt, β, Γ̄)
 end
 
 """

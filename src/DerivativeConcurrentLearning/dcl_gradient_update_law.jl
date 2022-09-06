@@ -148,21 +148,8 @@ function (S::Simulation)(
     θ̂::Union{Float64, Vector{Float64}}
     )
 
-    # Construct right-hand-side function
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1:Σ.n]
-        θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
-
-        # Dynamics
-        u = k(x, θ̂)
-        ẋ = Σ.f(x) + Σ.g(x)*(u + P.φ(x)*P.θ)
-
-        # Update law
-        θ̂̇ = τ(θ̂)
-
-        return vcat(ẋ, θ̂̇)
-    end
+    # Construct RHS function
+    rhs!(dX, X, p, t) = rhs_cl_gradient!(dX, X, p, t, Σ, P, k, τ)
 
     # Set up parameter dictionary
     p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
@@ -173,8 +160,8 @@ function (S::Simulation)(
     cb = PresetTimeCallback(ts, affect!)
 
     # Set up ODEProblem and solve
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    problem = ODEProblem(rhs!, vcat(x, θ̂), S.tf, p)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
 end
@@ -189,21 +176,8 @@ function (S::Simulation)(
     θ̂::Union{Float64, Vector{Float64}}
     )
 
-    # Construct right-hand-side function
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1:Σ.n]
-        θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
-
-        # Dynamics
-        u = k(x,θ̂)
-        ẋ = Σ.f(x) + Σ.g(x)*(u + P.φ(x)*P.θ)
-
-        # Update law
-        θ̂̇ = τCLF(x) + τCLF.Γ * τ(θ̂)
-
-        return vcat(ẋ, θ̂̇)
-    end
+    # RHS function
+    rhs!(dX, X, p, t) = rhs_cl_clf_gradient!(dX, X, p, t, Σ, P, k, τ, τCLF)
 
     # Set up parameter dictionary
     p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
@@ -214,8 +188,8 @@ function (S::Simulation)(
     cb = PresetTimeCallback(ts, affect!)
 
     # Set up ODEProblem and solve
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    problem = ODEProblem(rhs!, vcat(x, θ̂), S.tf, p)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
 end
@@ -229,25 +203,8 @@ function (S::Simulation)(
     θ̂::Union{Float64, Vector{Float64}}
     )
 
-    # Construct right-hand-side function
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1:Σ.n]
-        θ̂ = P.p == 1 ? X[Σ.n+1] : X[Σ.n+1:Σ.n+P.p]
-        ϑ = X[end]
-
-        # Dynamics
-        u = k(x, θ̂, ϑ)
-        ẋ = Σ.f(x) + Σ.g(x)*(u + P.φ(x)*P.θ)
-
-        # Update law
-        θ̂̇ = τ(θ̂)
-
-        # Update estimation error
-        ϑ̇ = estimation_error_dyn(ϑ, τ, Σ, P)
-
-        return vcat(ẋ, θ̂̇, ϑ̇)
-    end
+    # Construct RHS function
+    rhs!(dX, X, p, t) = rhs_cl_cbf_gradient!(dX, X, p, t, Σ, P, k, τ)
 
     # Set up parameter dictionary
     p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
@@ -258,8 +215,8 @@ function (S::Simulation)(
     cb = PresetTimeCallback(ts, affect!)
 
     # Set up ODEProblem and solve
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂, P.ϑ), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    problem = ODEProblem(rhs!, vcat(x, θ̂, P.ϑ), S.tf, p)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
 end
@@ -275,26 +232,7 @@ function (S::Simulation)(
     )
 
     # Construct right-hand-side function
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1 : Σ.n]
-        θ̂cbf = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
-        θ̂clf = P.p == 1 ? X[Σ.n + P.p + 1] : X[Σ.n + P.p + 1 : Σ.n + 2*P.p]
-        ϑ = X[end]
-
-        # Dynamics
-        u = k(x, θ̂cbf, θ̂clf, ϑ)
-        ẋ = Σ.f(x) + Σ.g(x)*(u + P.φ(x)*P.θ)
-
-        # Update laws
-        θ̂̇cbf = τ(θ̂cbf)
-        θ̂̇clf = τCLF(x) + τCLF.Γ * τ(θ̂clf)
-
-        # Update estimation error
-        ϑ̇ = estimation_error_dyn(ϑ, τ, Σ, P)
-
-        return vcat(ẋ, θ̂̇cbf, θ̂̇clf, ϑ̇)
-    end
+    rhs!(dX, X, p, t) = rhs_cl_cbf_clf_gradient!(dX, X, p, t, Σ, P, k, τ, τCLF)
 
     # Set up parameter dictionary
     p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
@@ -305,10 +243,124 @@ function (S::Simulation)(
     cb = PresetTimeCallback(ts, affect!)
 
     # Set up ODEProblem and solve
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂, θ̂, P.ϑ), [S.t0, S.tf], p)
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5(), callback=cb, tstops=ts)
+    problem = ODEProblem(rhs!, vcat(x, θ̂, θ̂, P.ϑ), S.tf, p)
+    trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
+end
+
+
+"RHS function to pass to ODE solver when using CL with gradient update."
+function rhs_cl_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::AdaptiveController, τ::DCLGradientUpdateLaw)
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[end] = τ(θ̂)
+    else
+        dX[Σ.n+1 : end] = τ(θ̂)
+    end
+
+    return nothing
+end
+
+"RHS function to pass to ODE solver when using CL with gradient update and CLF."
+function rhs_cl_clf_gradient!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters, 
+    k::AdaptiveController, 
+    τ::DCLGradientUpdateLaw, 
+    τCLF::CLFUpdateLaw
+    )
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[end] = τCLF(x) + τCLF.Γ * τ(θ̂)
+    else
+        dX[Σ.n+1 : end] = τCLF(x) + τCLF.Γ * τ(θ̂)
+    end
+
+    return nothing
+end
+
+"RHS function to pass to ODE solver when using CL with CBF."
+function rhs_cl_cbf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg, τ::DCLGradientUpdateLaw)
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂ = P.p == 1 ? X[Σ.n+1] : X[Σ.n+1:Σ.n+P.p]
+    ϑ = X[end]
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, θ̂, ϑ) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, θ̂, ϑ) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[Σ.n+1] = τ(θ̂)
+    else
+        dX[Σ.n+1:Σ.n+P.p] = τ(θ̂)
+    end
+
+    # Estimation error
+    dX[end] = estimation_error_dyn(ϑ, τ, Σ, P)
+
+    return nothing
+end
+
+"RHS function to pass to ODE solver when using CL with CBF and CLF."
+function rhs_cl_cbf_clf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg, τ::DCLGradientUpdateLaw, τCLF::CLFUpdateLaw)
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1 : Σ.n]
+    θ̂cbf = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
+    θ̂clf = P.p == 1 ? X[Σ.n + P.p + 1] : X[Σ.n + P.p + 1 : Σ.n + 2*P.p]
+    ϑ = X[end]
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[Σ.n + 1] = τ(θ̂cbf)
+        dX[Σ.n + P.p + 1] = τCLF(x) + τCLF.Γ * τ(θ̂clf)
+    else
+        dX[Σ.n + 1 : Σ.n + P.p] = τ(θ̂cbf)
+        dX[Σ.n + P.p + 1 : Σ.n + 2*P.p] = τCLF(x) + τCLF.Γ * τ(θ̂clf)
+    end
+
+    # Estimation error
+    dX[end] = estimation_error_dyn(ϑ, τ, Σ, P)
+
+    return nothing
 end
 
 """

@@ -45,13 +45,12 @@ function MatchedParameters(θ::Union{Float64, Vector{Float64}}, φ::Function, �
 end 
 
 """
-    regressor_lie_derivative(CLF::ControlLyapunovFunction, P::MatchedParameters, x)
+    regressor_lie_derivative(CLF::ControlLyapunovFunction, Σ::ControlAffineSystem, P::MatchedParameters, x)
 
 Compute Lie derivative along regressor.
 """
 function regressor_lie_derivative(CLF::ControlLyapunovFunction, Σ::ControlAffineSystem, P::MatchedParameters, x)
-    LgV = CBFToolbox.control_lie_derivative(CLF, Σ, x)
-    return LgV * P.φ(x)
+    return CBFToolbox.control_lie_derivative(CLF, Σ, x) * P.φ(x)
 end
 
 ############################################################################################
@@ -64,9 +63,12 @@ end
 Run open-loop simulation of control affine system from initial state x.
 """
 function (S::Simulation)(Σ::ControlAffineSystem, P::MatchedParameters, x::Union{Float64, Vector{Float64}})
-    right_hand_side(x, p, t) = Σ.f(x) + Σ.g(x)*P.φ(x)*P.θ
-    problem = ODEProblem(right_hand_side, x, [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    function rhs!(dx, x, θ, t)
+        dx .= Σ.f(x) + Σ.g(x)*P.φ(x)*θ
+        nothing
+    end
+    problem = ODEProblem(rhs!, x, [S.t0, S.tf], P.θ)
+    trajectory = solve(problem)
 
     return trajectory
 end
@@ -77,9 +79,12 @@ function (S::Simulation)(
     k::CBFToolbox.FeedbackController, 
     x::Union{Float64, Vector{Float64}}
     )
-    right_hand_side(x, p, t) = Σ.f(x) + Σ.g(x)*(k(x) + P.φ(x)*P.θ)
-    problem = ODEProblem(right_hand_side, x, [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    function rhs!(dx, x, θ, t)
+        dx .= Σ.f(x) + Σ.g(x)*(k(x) + P.φ(x)*θ)
+        nothing
+    end
+    problem = ODEProblem(rhs!, x, [S.t0, S.tf], P.θ)
+    trajectory = solve(problem)
 
     return trajectory
 end

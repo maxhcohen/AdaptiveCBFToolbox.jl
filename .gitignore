@@ -23,6 +23,9 @@ docs/site/
 # environment.
 Manifest.toml
 
+# That damn .DS_store file
+.DS_store
+
 # Scratch code
 scratch/
 notes.md

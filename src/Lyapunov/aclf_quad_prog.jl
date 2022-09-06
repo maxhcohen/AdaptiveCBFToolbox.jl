@@ -28,6 +28,10 @@ function ACLFQuadProg(Σ::ControlAffineSystem, P::MatchedParameters, CLF::Contro
     H = Σ.m == 1 ? 1.0 : Matrix(1.0I, Σ.m, Σ.m)
     F = Σ.m == 1 ? 0.0 : zeros(Σ.m)
 
+    # Define Lie derivatives
+    LfV(x) = CBFToolbox.drift_lie_derivative(CLF, Σ, x)
+    LgV(x) = CBFToolbox.control_lie_derivative(CLF, Σ, x)
+
     # Construct quadratic program
     function solve(x, θ̂)
         # Build QP and instantiate control decision variable
@@ -35,18 +39,13 @@ function ACLFQuadProg(Σ::ControlAffineSystem, P::MatchedParameters, CLF::Contro
         set_silent(model)
         Σ.m == 1 ? @variable(model, u) : @variable(model, u[1:Σ.m])
 
-        # Compute Lie derivatives
-        LfV = CBFToolbox.drift_lie_derivative(CLF, Σ, x)
-        LgV = CBFToolbox.control_lie_derivative(CLF, Σ, x)
-        γ = CLF.α(x)
-
         # Check if we're relaxing the CLF constraint
         if CLF.relax
             @variable(model, δ)
-            @constraint(model, LfV + LgV*(u + P.φ(x)*θ̂) <= -γ + δ)
+            @constraint(model, LfV(x) + LgV(x)*(u + P.φ(x)*θ̂) <= -CLF.α(x) + δ)
             @objective(model, Min, 0.5*u'*H*u + F'*u + CLF.p*δ^2)
         else
-            @constraint(model, LfV + LgV*(u + P.φ(x)*θ̂) <= -γ)
+            @constraint(model, LfV(x) + LgV(x)*(u + P.φ(x)*θ̂) <= -CLF.α(x))
             @objective(model, Min, 0.5*u'*H*u + F'*u)
         end
 

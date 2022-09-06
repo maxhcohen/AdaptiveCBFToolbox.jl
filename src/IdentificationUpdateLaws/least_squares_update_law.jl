@@ -84,7 +84,7 @@ function (S::Simulation)(
         # Pull out states
         x = Σ.n == 1 ? X[1] : X[1:Σ.n]
         θ̂ = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
-        Γ = P.p == 1 ? X[end] : X[Σ.n + P.p : end]
+        Γ = P.p == 1 ? X[end] : X[Σ.n + P.p + 1 : end]
         Γ = P.p == 1 ? Γ : reshape(Γ, P.p, P.p)
 
         # Dynamics
@@ -100,7 +100,7 @@ function (S::Simulation)(
     end
     Γ = P.p == 1 ? Γ : vec(Γ)
     problem = ODEProblem(right_hand_side, vcat(x, θ̂, Γ), [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    trajectory = solve(problem)
 
     return trajectory
 end
@@ -150,7 +150,7 @@ function (S::Simulation)(
     end
     Γ = P.p == 1 ? Γ : vec(Γ)
     problem = ODEProblem(right_hand_side, vcat(x, θ̂, Γ), [S.t0, S.tf])
-    trajectory = solve(problem, OrdinaryDiffEq.Tsit5())
+    trajectory = solve(problem)
 
     return trajectory
 end

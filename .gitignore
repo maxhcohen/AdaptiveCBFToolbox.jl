@@ -28,6 +28,5 @@ Manifest.toml
 
 # Scratch code
 scratch/
-examples/Modular
 notes.md
 .vscode/

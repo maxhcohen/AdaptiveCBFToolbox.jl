@@ -23,13 +23,6 @@ To download this package open the Julia REPL, enter the package manager (type `]
 add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
 ```
 
-Note that this package depends on another unregistered package [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2), which in turn depends on yet another unregistered package [VectorFieldPlots.jl](https://github.com/maxhcohen/VectorFieldPlots.jl). Julia can sometimes run into issues when there's nested dependencies on unregistered packages; one way to get around this is to add all other unregistered dependencies first and then add this package:
-```
-add https://github.com/maxhcohen/VectorFieldPlots.jl.git
-add https://github.com/maxhcohen/CBFToolbox.jl.git
-add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
-```
-
 ## Tutorial
 The usage of this package is similar to that of [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2): we define a `ControlAffineSystem` and a `Controller` based on a `ControlLyapunovFunction`, `ControlBarrierFunction`, or both, and then run a simulation using a `Simulation` object. This package integrates the new abstract types `UncertainParameters` and `UpdateLaw` into the previous workflow that allows for specifying unknown parameters of the underlying system and a parameter estimator to learn such parameters, respectively. The following code shows a simple example of the typical workflow.
 ```julia
@@ -75,7 +68,7 @@ M = 20 # Number of entries in history stack
 H = ICLHistoryStack(M, Σ, P)
 
 # Define update law associated with data in history stack
-dt = 0.01 # Sampling time used for data collection
+dt = 0.5 # Sampling time used for data collection
 Δt = 0.5 # Length of integration window
 τ = ICLGradientUpdateLaw(Γc, dt, Δt, H) # Parameter estimation object
 

@@ -60,7 +60,7 @@ for i in 1:N
     dt = 0.1
     Δt = 0.5
     H = ICLHistoryStack(M, Σ, P)
-    τ = ICLLeastSquaresUpdateLaw(Σ, P, H, dt, Δt)
+    τ = ICLLeastSquaresUpdateLaw(H, dt, Δt)
 
     # Initial conditions
     x10 = rand(-2.2:0.01:-1.8)

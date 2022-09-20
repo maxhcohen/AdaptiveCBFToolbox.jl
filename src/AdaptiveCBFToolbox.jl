@@ -31,6 +31,7 @@ export Simulation
 export ControlLyapunovFunction
 export ControlBarrierFunction
 export SecondOrderCBF
+export CBFQuadProg
 
 # Export functions from CBFToolbox
 export plot_circle
@@ -101,6 +102,7 @@ include("ReinforcementLearning/critic_gradient_update_law.jl")
 include("ReinforcementLearning/critic_gradient_sims.jl")
 include("ReinforcementLearning/critic_ls_update_law.jl")
 include("ReinforcementLearning/critic_ls_sims.jl")
+include("ReinforcementLearning/safeguarding_controller.jl")
 
 
 end # module

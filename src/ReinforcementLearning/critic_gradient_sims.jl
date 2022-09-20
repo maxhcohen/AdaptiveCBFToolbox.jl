@@ -1,6 +1,6 @@
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    k::MBRLController, 
+    k::Union{MBRLController, CBFToolbox.CBFQuadProg},
     ϕ::BasisFunctions,
     τC::CriticGradient,
     τA::ActorGradient,
@@ -79,13 +79,31 @@ function (S::Simulation)(
     return trajectory
 end
 
+# function (S::Simulation)(
+#     Σ::ControlAffineSystem,
+#     k::CBFToolbox.CBFQuadProg, 
+#     ϕ::BasisFunctions,
+#     τC::CriticGradient,
+#     τA::ActorGradient,
+#     x::Union{Float64, Vector{Float64}},
+#     Wc::Vector{Float64},
+#     Wa::Vector{Float64},
+#     )
+#     # Construct right-hand-side
+#     rhs!(dX, X, p, t) = rhs_mbrl_gradient!(dX, X, p, t, Σ, k, ϕ, τC, τA)
+#     problem = ODEProblem(rhs!, vcat(x, Wc, Wa), S.tf)
+#     trajectory = solve(problem)
+
+#     return trajectory
+# end
+
 function rhs_mbrl_gradient!(
     dX, 
     X, 
     p, 
     t, 
     Σ::ControlAffineSystem, 
-    k::MBRLController, 
+    k::Union{MBRLController, CBFToolbox.CBFQuadProg},
     ϕ::BasisFunctions,
     τC::CriticGradient,
     τA::ActorGradient,
@@ -192,6 +210,36 @@ function rhs_mbrl_gradient!(
 
     return nothing
 end
+
+# function rhs_mbrl_gradient!(
+#     dX, 
+#     X, 
+#     p, 
+#     t, 
+#     Σ::ControlAffineSystem, 
+#     k::CBFToolbox.CBFQuadProg, 
+#     ϕ::BasisFunctions,
+#     τC::CriticGradient,
+#     τA::ActorGradient,
+#     )
+#     # Pull out states
+#     x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+#     Wc = X[Σ.n + 1 : Σ.n + ϕ.L]
+#     Wa = X[Σ.n + ϕ.L + 1 : Σ.n + 2*ϕ.L]
+
+#     # Dynamics
+#     if Σ.n == 1
+#         dX[1] = Σ.f(x) + Σ.g(x)*k(x, Wa)
+#     else
+#         dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*k(x, Wa)
+#     end
+
+#     # Update laws
+#     dX[Σ.n + 1 : Σ.n + ϕ.L] = τC(x, Wc, Wa)
+#     dX[Σ.n + ϕ.L + 1 : Σ.n + 2*ϕ.L] = τA(Wa, Wc)
+
+#     return nothing
+# end
 
 
 # Integrator callbacks

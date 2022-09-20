@@ -66,28 +66,20 @@ ts = 0.0:0.01:15
 
 begin
     fig = plot()
-    for sol in sols
-        plot!(sol, idxs=(1,2), label="")
-    end
+    plot!(sol, idxs=(1,2), label="")
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     xlims!(-2.2, 0.2)
     ylims!(-0.7, 2.2)
-    fig[1][1][:label] = L"\varepsilon_0 = 10"
-    fig[1][2][:label] = L"\varepsilon_0 = 1"
-    fig[1][3][:label] = L"\varepsilon_0 = 0.3"
-    fig[1][4][:label] = L"\varepsilon_0 = 0.1"
     display(fig)
 end
 
 begin
     fig = plot()
-    for sol in sols
-        θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-        θ̃(t) = norm(θ - θ̂(t))
-        plot!(ts, θ̃.(ts), label="")
-    end
+    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
+    θ̃(t) = norm(θ - θ̂(t))
+    plot!(ts, θ̃.(ts), label="")
     xlabel!(L"t")
     ylabel!(L"||\tilde{\theta}(t)||")
     display(fig)
@@ -96,30 +88,22 @@ end
 # Plot control effort
 begin
     fig = plot()
-    for sol in sols
-        x(t) = sol(t, idxs = 1 : Σ.n)
-        θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-        u(t) = kISSf(x(t),  θ̂(t))
-        unorm(t) = norm(u(t))
-        plot!(ts, unorm.(ts), label="")
-    end
+    x(t) = sol(t, idxs = 1 : Σ.n)
+    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
+    u(t) = kISSf(x(t),  θ̂(t))
+    unorm(t) = norm(u(t))
+    plot!(ts, unorm.(ts), label="")
     xlabel!(L"t")
     ylabel!(L"\|u(t)\|")
-    fig[1][1][:label] = L"\varepsilon_0 = 10"
-    fig[1][2][:label] = L"\varepsilon_0 = 1"
-    fig[1][3][:label] = L"\varepsilon_0 = 0.3"
-    fig[1][4][:label] = L"\varepsilon_0 = 0.1"
     display(fig)
 end
 
 # Plot state convergence?
 begin
     fig = plot()
-    for sol in sols
-        x(t) = sol(t, idxs = 1 : Σ.n)
-        xnorm(t) = norm(x(t))
-        plot!(ts, xnorm.(ts), label="")
-    end
+    x(t) = sol(t, idxs = 1 : Σ.n)
+    xnorm(t) = norm(x(t))
+    plot!(ts, xnorm.(ts), label="")
     xlabel!(L"t")
     ylabel!(L"\|x(t)\|")
 end

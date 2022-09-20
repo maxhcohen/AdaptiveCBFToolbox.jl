@@ -61,6 +61,7 @@ export MBRLController
 export BellmanGrid
 export BellmanSampling
 export CriticGradient
+export CriticLeastSquares
 export ActorGradient
 
 # Export some utility functions
@@ -98,6 +99,8 @@ include("ReinforcementLearning/bellman_sampling.jl")
 include("ReinforcementLearning/actor_gradient_update_law.jl")
 include("ReinforcementLearning/critic_gradient_update_law.jl")
 include("ReinforcementLearning/critic_gradient_sims.jl")
+include("ReinforcementLearning/critic_ls_update_law.jl")
+include("ReinforcementLearning/critic_ls_sims.jl")
 
 
 end # module

@@ -210,3 +210,67 @@ function bellman_normalizer(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedPara
 
     return ω, ρ
 end
+
+"""
+    bellman_matrix(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k::MBRLController)
+    bellman_matrix(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+"""
+function bellman_matrix(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k::MBRLController)
+    ω = bellman_regressor(x, Wa, Σ, ϕ, k)
+    return ω*ω'
+end
+
+function bellman_matrix(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+    ω = bellman_regressor(x, θ̂, Wa, Σ, P, ϕ, k)
+    return ω*ω'
+end
+
+function normalized_bellman_matrix(
+    x::Union{Float64, Vector{Float64}}, 
+    Wa::Vector{Float64}, 
+    Σ::ControlAffineSystem, 
+    ϕ::BasisFunctions, 
+    k::MBRLController
+    )
+    ω = bellman_regressor(x, Wa, Σ, ϕ, k)
+    ρ = 1 + ω' * ω
+
+    return (ω*ω')/ρ^2
+end
+
+function normalized_bellman_matrix(
+    x::Union{Float64, Vector{Float64}},  
+    θ̂::Union{Float64, Vector{Float64}},  
+    Wa::Vector{Float64}, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters, 
+    ϕ::BasisFunctions, 
+    k::MBRLController
+    )
+    ω = bellman_regressor(x, θ̂, Wa, Σ, P, ϕ, k)
+    ρ = 1 + ω' * ω
+
+    return (ω*ω')/ρ^2
+end
+
+function normalized_bellman_matrix(
+    X::Vector{Vector{Float64}}, 
+    Wa::Vector{Float64}, 
+    Σ::ControlAffineSystem, 
+    ϕ::BasisFunctions, 
+    k::MBRLController
+    )
+    return mean([normalized_bellman_matrix(x, Wa, Σ, ϕ, k) for x in X])
+end
+
+function normalized_bellman_matrix(
+    X::Vector{Vector{Float64}}, 
+    θ̂::Union{Float64, Vector{Float64}},  
+    Wa::Vector{Float64}, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters, 
+    ϕ::BasisFunctions, 
+    k::MBRLController
+    )
+    return mean([normalized_bellman_matrix(x, θ̂, Wa, Σ, P, ϕ, k) for x in X])
+end

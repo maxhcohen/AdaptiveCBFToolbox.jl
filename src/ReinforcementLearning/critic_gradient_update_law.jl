@@ -28,7 +28,7 @@ Evaluate update law with current weight estimates
         ϕ::BasisFunctions, 
         k::MBRLController, 
         cost::CostFunction,
-        B::BellmanGrid
+        B::BellmanExtrapolation
         )
 
     CriticGradient(
@@ -38,26 +38,7 @@ Evaluate update law with current weight estimates
         ϕ::BasisFunctions, 
         k::MBRLController, 
         cost::CostFunction,
-        B::BellmanGrid
-        )
-
-    CriticGradient(
-        Γ::Union{Float64, Matrix{Float64}}, 
-        Σ::ControlAffineSystem, 
-        ϕ::BasisFunctions, 
-        k::MBRLController, 
-        cost::CostFunction,
-        B::BellmanSampling
-        )
-
-    CriticGradient(
-        Γ::Union{Float64, Matrix{Float64}}, 
-        Σ::ControlAffineSystem, 
-        P::MatchedParameters,
-        ϕ::BasisFunctions, 
-        k::MBRLController, 
-        cost::CostFunction,
-        B::BellmanSampling
+        B::BellmanExtrapolation
         )
 
 Construct a `CriticGradient` object.

@@ -46,7 +46,7 @@ HOCBFs = [HOCBF1, HOCBF2]
 
 # Define an ISSf controller
 ε0 = 1.0
-λ = 1.0
+λ = 0.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBFs, kISS, ε0, λ)
 
 # Define an ICL history stack and update law

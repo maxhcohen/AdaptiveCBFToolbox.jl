@@ -50,7 +50,7 @@ HOCBF = SecondOrderCBF(Σ, h, α1, α2)
 
 # Define an ISSf controller
 ε0 = 0.5
-λ = 10.0
+λ = 0.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBF, kISS, ε0, λ)
 
 for i in 1:N

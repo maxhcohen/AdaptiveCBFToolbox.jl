@@ -34,8 +34,8 @@ h(x) = norm(x[1:2] - xo)^2 - ro^2
 α1(s) = s
 α2(s) = 0.5s
 HOCBF = SecondOrderCBF(Σ, h, α1, α2)
-ε0 = 0.1
-λ = 1.0
+ε0 = 1.0
+λ = 0.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBF, kISS, ε0, λ)
 
 # Parameters associated with ICL

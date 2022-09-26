@@ -2,7 +2,6 @@
 using Revise
 using AdaptiveCBFToolbox
 using LinearAlgebra
-using Statistics
 
 # Define system: planar double integrator
 n = 4
@@ -24,7 +23,7 @@ P = MatchedParameters(θ, φ)
 V(x) = 0.5*norm(x[1:2])^2 + 0.5*norm(x[3:4] + x[1:2])^2
 γ(x) = V(x)
 CLF = ControlLyapunovFunction(V, γ)
-ε = 10.0
+ε = 20.0
 kISS = ISSaCLFQuadProg(Σ, P, CLF, ε)
 
 # CBF
@@ -34,8 +33,8 @@ h(x) = norm(x[1:2] - xo)^2 - ro^2
 α1(s) = s
 α2(s) = 0.5s
 HOCBF = SecondOrderCBF(Σ, h, α1, α2)
-ε0 = 0.1
-λ = 1.0
+ε0 = 1.0
+λ = 0.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBF, kISS, ε0, λ)
 
 # Parameters associated with ICL
@@ -49,7 +48,7 @@ H = ICLHistoryStack(M, Σ, P)
 
 # Initial conditions
 x0 = [-2.1, 2.0, 0.0, 0.0]
-θ̂0 = 3*ones(2)
+θ̂0 = 2*ones(2)
 Γ0 = 100.0*diagm(ones(2))
 
 # Run sim
@@ -60,34 +59,38 @@ sol = S(Σ, P, kISSf, τ, x0, θ̂0, Γ0)
 using Plots
 using LaTeXStrings
 gr()
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="", palette=:julia)
+# Define colors and plot default settings
+begin
+    myblue = RGB(7/255, 114/255, 179/255)
+    myred = RGB(240/255, 97/255, 92/255)
+    mygreen = RGB(0/255, 159/255, 115/255)
+    mypurple = RGB(120/255, 110/255, 179/255)
+    myyellow = RGB(231/255, 161/255, 34/255)
+    mycyan = RGB(93/255, 180/255, 229/255)
+    mypink = RGB(217/255, 91/255, 161/255)
+    mypalette = [myblue, myred, mygreen, mypurple, myyellow, mycyan, mypink]
+end
+default(grid=false, framestyle=:box, lw=2, label="", palette=mypalette, fontfamily="Computer Modern", legend=:topright)
+
 # Set up some plotting stuff
 ts = 0.0:0.01:15
 
 begin
     fig = plot()
-    for sol in sols
-        plot!(sol, idxs=(1,2), label="")
-    end
+    plot!(sol, idxs=(1,2), label="")
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     xlims!(-2.2, 0.2)
     ylims!(-0.7, 2.2)
-    fig[1][1][:label] = L"\varepsilon_0 = 10"
-    fig[1][2][:label] = L"\varepsilon_0 = 1"
-    fig[1][3][:label] = L"\varepsilon_0 = 0.3"
-    fig[1][4][:label] = L"\varepsilon_0 = 0.1"
     display(fig)
 end
 
 begin
     fig = plot()
-    for sol in sols
-        θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-        θ̃(t) = norm(θ - θ̂(t))
-        plot!(ts, θ̃.(ts), label="")
-    end
+    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
+    θ̃(t) = norm(θ - θ̂(t))
+    plot!(ts, θ̃.(ts), label="")
     xlabel!(L"t")
     ylabel!(L"||\tilde{\theta}(t)||")
     display(fig)
@@ -96,31 +99,13 @@ end
 # Plot control effort
 begin
     fig = plot()
-    for sol in sols
-        x(t) = sol(t, idxs = 1 : Σ.n)
-        θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-        u(t) = kISSf(x(t),  θ̂(t))
-        unorm(t) = norm(u(t))
-        plot!(ts, unorm.(ts), label="")
-    end
+    x(t) = sol(t, idxs = 1 : Σ.n)
+    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
+    u(t) = kISSf(x(t),  θ̂(t))
+    unorm(t) = norm(u(t))
+    plot!(ts, unorm.(ts), label="", c=3)
     xlabel!(L"t")
     ylabel!(L"\|u(t)\|")
-    fig[1][1][:label] = L"\varepsilon_0 = 10"
-    fig[1][2][:label] = L"\varepsilon_0 = 1"
-    fig[1][3][:label] = L"\varepsilon_0 = 0.3"
-    fig[1][4][:label] = L"\varepsilon_0 = 0.1"
     display(fig)
-end
-
-# Plot state convergence?
-begin
-    fig = plot()
-    for sol in sols
-        x(t) = sol(t, idxs = 1 : Σ.n)
-        xnorm(t) = norm(x(t))
-        plot!(ts, xnorm.(ts), label="")
-    end
-    xlabel!(L"t")
-    ylabel!(L"\|x(t)\|")
 end
 

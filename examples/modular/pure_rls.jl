@@ -2,14 +2,6 @@
 using Revise
 using AdaptiveCBFToolbox
 using LinearAlgebra
-using Statistics
-using Plots
-using LaTeXStrings
-default(fontfamily="Computer Modern", grid=false, framestyle=:box, lw=2, label="")
-
-# How many simulations we want to run
-N = 25
-sols = []
 
 # Define system: planar double integrator
 n = 4
@@ -52,42 +44,49 @@ HOCBF = SecondOrderCBF(Σ, h, α1, α2)
 λ = 1.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBF, kISS, ε0, λ)
 
-for i in 1:N
-    # Define an ICL history stack and update law
-    β = 0.1
-    Γ̄ = 100.0
-    M = 20
-    dt = 0.1
-    Δt = 0.5
-    H = ICLHistoryStack(M, Σ, P)
-    τ = ICLLeastSquaresUpdateLaw(Σ, P, H, dt, Δt)
+# Define an ICL history stack and update law
+M = 20
+dt = 0.1
+Δt = 0.5
+H = ICLHistoryStack(M, Σ, P)
+τ = ICLLeastSquaresUpdateLaw(H, dt, Δt)
 
-    # Initial conditions
-    x10 = rand(-2.2:0.01:-1.8)
-    x20 = rand(1.8:0.01:2.2)
-    x0 = [x10, x20, 0.0, 0.0]
-    θ̂10 = rand(0.0:0.1:2)
-    θ̂20 = rand(0.0:0.1:2)
-    θ̂0 = [θ̂10, θ̂20]
-    Γ0 = 10.0*diagm(ones(length(θ)))
+# Initial conditions
+x10 = rand(-2.2:0.01:-1.8)
+x20 = rand(1.8:0.01:2.2)
+x0 = [x10, x20, 0.0, 0.0]
+θ̂10 = rand(0.0:0.1:2)
+θ̂20 = rand(0.0:0.1:2)
+θ̂0 = [θ̂10, θ̂20]
+Γ0 = 10.0*diagm(ones(length(θ)))
 
-    # Run simulation
-    T = 15.0
-    S = Simulation(T)
-    sol = S(Σ, P, kISSf, τ, x0, θ̂0, Γ0)
+# Run simulation
+T = 15.0
+S = Simulation(T)
+sol = S(Σ, P, kISSf, τ, x0, θ̂0, Γ0)
 
-    # Save data
-    push!(sols, sol)
+using Plots
+using LaTeXStrings
+gr()
+# Define colors and plot default settings
+begin
+    myblue = RGB(7/255, 114/255, 179/255)
+    myred = RGB(240/255, 97/255, 92/255)
+    mygreen = RGB(0/255, 159/255, 115/255)
+    mypurple = RGB(120/255, 110/255, 179/255)
+    myyellow = RGB(231/255, 161/255, 34/255)
+    mycyan = RGB(93/255, 180/255, 229/255)
+    mypink = RGB(217/255, 91/255, 161/255)
+    mypalette = [myblue, myred, mygreen, mypurple, myyellow, mycyan, mypink]
 end
+default(grid=false, framestyle=:box, lw=2, label="", palette=mypalette, fontfamily="Computer Modern", legend=:topright)
 
 # Set up some plotting stuff
 ts = 0.0:0.01:15
 
 begin
     fig = plot()
-    for sol in sols
-        plot!(sol, idxs=(1,2), label="")
-    end
+    plot!(sol, idxs=(1,2), label="")
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
     ylabel!(L"x_2")
@@ -98,23 +97,11 @@ end
 
 begin
     fig = plot()
-    for sol in sols
-        θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-        θ̃(t) = norm(θ - θ̂(t))
-        plot!(ts, θ̃.(ts), label="")
-    end
+    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
+    θ̃(t) = norm(θ - θ̂(t))
+    plot!(ts, θ̃.(ts), label="")
     xlabel!(L"t")
     ylabel!(L"||\tilde{\theta}(t)||")
     display(fig)
-end
-
-# Compute average estimation error
-θ̃avg(t) = mean([norm(θ - sol(t, idxs = Σ.n + 1 : Σ.n + P.p)) for sol in sols])
-θ̃std(t) = std([norm(θ - sol(t, idxs = Σ.n + 1 : Σ.n + P.p)) for sol in sols])
-begin
-    fig = plot(ts, θ̃avg.(ts), ribbon=θ̃std.(ts), fillalpha=0.2, c=2)
-    xlabel!(L"t")
-    ylabel!(L"||\tilde{\theta}_{\text{avg}}(t)||")
-    title!("Pure least squares estimator")
 end
 

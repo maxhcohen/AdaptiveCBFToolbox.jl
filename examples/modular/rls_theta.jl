@@ -20,51 +20,53 @@ g(x) = vcat(zeros(2,2), diagm(ones(2)))
 P = MatchedParameters(θ, φ)
 
 # Define a CLF and an adaptive CLF-QP controller for reaching the origin
-Q = [2.0 0.0 1.0 0.0; 0.0 2.0 0.0 1.0; 1.0 0.0 1.0 0.0; 0.0 1.0 0.0 1.0]
-V(x) = x'Q*x
+V(x) = 0.5*norm(x[1:2])^2 + 0.5*norm(x[3:4] + x[1:2])^2
 γ(x) = V(x)
 CLF = ControlLyapunovFunction(V, γ)
-
-# Define ISS controller
 ε = 20.0
 kISS = ISSaCLFQuadProg(Σ, P, CLF, ε)
 
-# Define safety constraints for two obstacles
+# Define a HOCBF to avoid an obstacle
 xo = [-1.0, 1.0]
 ro = 0.5
 h(x) = norm(x[1:2] - xo)^2 - ro^2
-
-# Construct HOCBFs for each obstacle and HO-RaCBF QP
 α1(s) = s
 α2(s) = 0.5s
 HOCBF = SecondOrderCBF(Σ, h, α1, α2)
-
-# Define an ISSf controller
 ε0 = 1.0
 λ = 0.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBF, kISS, ε0, λ)
 
-# Define an ICL history stack and update law
-Γ = 100.0*diagm(ones(length(θ)))
+# Parameters associated with ICL
+β = 1.0
+Γ̄ = 1000.0
 M = 20
 dt = 0.5
 Δt = 0.5
 H = ICLHistoryStack(M, Σ, P)
-τ = ICLGradientUpdateLaw(Γ, dt, Δt, H)
+τ = ICLLeastSquaresUpdateLaw(H, dt, Δt, β)
 
 # Initial conditions
 x0 = [-2.1, 2.0, 0.0, 0.0]
-θ̂0 = 2*ones(2)
+θ̂0s = [i*ones(2) for i in 2:4]
+Γ0 = 100.0*diagm(ones(2))
 
-# Run simulation
+# Run sim for each initial set of parameter estimates
 T = 15.0
 S = Simulation(T)
-sol = S(Σ, P, kISSf, τ, x0, θ̂0)
+sols = []
+for θ̂0 in θ̂0s
+    local H = ICLHistoryStack(M, Σ, P)
+    local τ = ICLLeastSquaresUpdateLaw(H, dt, Δt, β)
+    push!(sols, S(Σ, P, kISSf, τ, x0, θ̂0, Γ0))
+end
 
 using Plots
 using LaTeXStrings
-gr()
-# Define colors and plot default settings
+gr() # Used to quickly vizualize results
+# pgfplotsx() # Used to save figures as .tex files and directly embed in LaTeX file
+
+# Define colors and plot default settings to make things look nice
 begin
     myblue = RGB(7/255, 114/255, 179/255)
     myred = RGB(240/255, 97/255, 92/255)
@@ -77,40 +79,54 @@ begin
 end
 default(grid=false, framestyle=:box, lw=2, label="", palette=mypalette, fontfamily="Computer Modern", legend=:topright)
 
+# Discretization (is that spelled right?) of simulation timespan
+ts = 0.0:0.01:15
+
 # Set up some plotting stuff
 ts = 0.0:0.01:15
 
+# System trajectory
 begin
     fig = plot()
-    plot!(sol, idxs=(1,2), label="")
+    plot!(sols[1], idxs=(1,2), label=L"\hat{\theta}(0)=(2,2)", c=3)
+    plot!(sols[2], idxs=(1,2), label=L"\hat{\theta}(0)=(3,3)", ls=:dash, c=3)
+    plot!(sols[3], idxs=(1,2), label=L"\hat{\theta}(0)=(4,4)", ls=:dot, c=3)
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
     ylabel!(L"x_2")
     xlims!(-2.2, 0.2)
     ylims!(-0.7, 2.2)
+    # savefig("rls_theta_traj.tex")
     display(fig)
 end
 
-
+# Parameter estimation error
 begin
     fig = plot()
-    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-    θ̃(t) = norm(θ - θ̂(t))
-    plot!(ts, θ̃.(ts), label="")
+    θ̂(t, i) = sols[i](t, idxs = Σ.n + 1 : Σ.n + P.p)
+    θ̃(t, i) = norm(θ - θ̂(t, i))
+    plot!(ts, θ̃.(ts, 1), label="", c=3, ls=:solid)
+    plot!(ts, θ̃.(ts, 2), label="", c=3, ls=:dash)
+    plot!(ts, θ̃.(ts, 3), label="", c=3, ls=:dot)
     xlabel!(L"t")
     ylabel!(L"||\tilde{\theta}(t)||")
+    # savefig("rls_theta_theta.tex")
     display(fig)
 end
 
 # Plot control effort
 begin
     fig = plot()
-    x(t) = sol(t, idxs = 1 : Σ.n)
-    θ̂(t) = sol(t, idxs = Σ.n + 1 : Σ.n + P.p)
-    u(t) = kISSf(x(t),  θ̂(t))
-    unorm(t) = norm(u(t))
-    plot!(ts, unorm.(ts), label="")
+    x(t, i) = sols[i](t, idxs = 1 : Σ.n)
+    θ̂(t, i) = sols[i](t, idxs = Σ.n + 1 : Σ.n + P.p)
+    u(t, i) = kISSf(x(t, i),  θ̂(t, i))
+    unorm(t, i) = norm(u(t, i))
+    plot!(ts, unorm.(ts, 1), label="", c=3, ls=:solid)
+    plot!(ts, unorm.(ts, 2), label="", c=3, ls=:dash)
+    plot!(ts, unorm.(ts, 3), label="", c=3, ls=:dot)
     xlabel!(L"t")
     ylabel!(L"\|u(t)\|")
+    # savefig("rls_theta_control.tex")
     display(fig)
 end
+

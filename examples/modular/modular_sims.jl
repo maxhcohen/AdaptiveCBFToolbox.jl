@@ -25,7 +25,7 @@ P = MatchedParameters(θ, φ)
 V(x) = 0.5*norm(x[1:2])^2 + 0.5*norm(x[3:4] + x[1:2])^2
 γ(x) = V(x)
 CLF = ControlLyapunovFunction(V, γ)
-ε = 10.0
+ε = 20.0
 kISS = ISSaCLFQuadProg(Σ, P, CLF, ε)
 
 # CBF
@@ -35,8 +35,8 @@ h(x) = norm(x[1:2] - xo)^2 - ro^2
 α1(s) = s
 α2(s) = 0.5s
 HOCBF = SecondOrderCBF(Σ, h, α1, α2)
-ε0 = 0.5
-λ = 10.0
+ε0 = 1.0
+λ = 0.0
 kISSf = ISSfaCBFQuadProg(Σ, P, HOCBF, kISS, ε0, λ)
 
 # Parameters associated with ICL
@@ -50,8 +50,8 @@ dt = 0.5
 # Generate initial conditions
 x10 = rand(-2.2:0.01:-1.8, N)
 x20 = rand(1.8:0.01:2.2, N)
-θ̂10 = rand(0.0:0.1:2, N)
-θ̂20 = rand(0.0:0.1:2, N)
+θ̂10 = rand(0.0:0.1:3.0, N)
+θ̂20 = rand(0.0:0.1:3.0, N)
 x0 = [vcat([x10[i], x20[i]], zeros(2)) for i in 1:N]
 θ̂0 = [[θ̂10[i], θ̂20[i]] for i in 1:N]
 
@@ -133,8 +133,20 @@ sol_rlsbf = modular_sims(D, "rls_bounded_forgetting");
 # Do some plots
 using Plots
 using LaTeXStrings
-gr()
-default(grid=false, framestyle=:box, lw=2, label="", palette=:julia, legend = :topright)
+pgfplotsx()
+# Define colors and plot default settings
+begin
+    myblue = RGB(7/255, 114/255, 179/255)
+    myred = RGB(240/255, 97/255, 92/255)
+    mygreen = RGB(0/255, 159/255, 115/255)
+    mypurple = RGB(120/255, 110/255, 179/255)
+    myyellow = RGB(231/255, 161/255, 34/255)
+    mycyan = RGB(93/255, 180/255, 229/255)
+    mypink = RGB(217/255, 91/255, 161/255)
+    mypalette = [myblue, myred, mygreen, mypurple, myyellow, mycyan, mypink]
+end
+default(grid=false, framestyle=:box, lw=2, label="", palette=mypalette, fontfamily="Computer Modern", legend=:topright)
+
 # Construct trajectory functions
 ts = 0.0:0.01:T
 Σidxs = 1 : Σ.n
@@ -154,21 +166,22 @@ u(t, sol) = kISSf(x(t,sol), θ̂(t, sol))
 θ̃avg_rlsbf(t) = mean([norm(θ - θ̂(t, sol)) for sol in sol_rlsbf])
 θ̃std_rlsbf(t) = std([norm(θ - θ̂(t, sol)) for sol in sol_rlsbf])
 begin
-    fig = plot(legend = :topright)
-    plot!(ts, θ̃avg_gradient.(ts), ribbon=θ̃std_gradient.(ts), fillalpha=0.2, c=1, label="Gradient")
+    fig = plot(ts, θ̃avg_gradient.(ts), ribbon=θ̃std_gradient.(ts), fillalpha=0.2, c=1, label="Gradient")
     plot!(ts, θ̃avg_rls.(ts), ribbon=θ̃std_rls.(ts), fillalpha=0.2, c=2, label="RLS")
     plot!(ts, θ̃avg_rlsf.(ts), ribbon=θ̃std_rlsf.(ts), fillalpha=0.2, c=3, label="RLS w/ forgetting")
-    plot!(ts, θ̃avg_rlsbf.(ts), ribbon=θ̃std_rlsbf.(ts), fillalpha=0.2, c=4, label="RLS w/ bounded forgetting")
+    plot!(ts, θ̃avg_rlsbf.(ts), ribbon=θ̃std_rlsbf.(ts), fillalpha=0.2, c=4, label="RLS w/ variable forgetting")
     xlabel!(L"t")
     ylabel!(L"||\tilde{\theta}_{\mathrm{avg}}(t)||")
+    # xlims!(0, 8)
     display(fig)
+    # savefig("average_error.tex")
 end
 
 # Plot trajectories
 begin
     fig = plot()
     for sol in sol_gradient
-        plot!(sol, idxs=(1,2), label="", c=1, lw=0.1)
+        plot!(sol, idxs=(1,2), label="", c=1, lw=1.0)
     end
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
@@ -177,12 +190,13 @@ begin
     xlims!(-2.5, 0.5)
     ylims!(-0.5, 2.5)
     display(fig)
+    # savefig("gd_phase.tex")
 end
 
 begin
     fig = plot()
     for sol in sol_rls
-        plot!(sol, idxs=(1,2), label="", c=2, lw=0.1)
+        plot!(sol, idxs=(1,2), label="", c=2, lw=1.0)
     end
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
@@ -191,12 +205,13 @@ begin
     xlims!(-2.5, 0.5)
     ylims!(-0.5, 2.5)
     display(fig)
+    # savefig("rls_phase.tex")
 end
 
 begin
     fig = plot()
     for sol in sol_rlsf
-        plot!(sol, idxs=(1,2), label="", c=3, lw=0.1)
+        plot!(sol, idxs=(1,2), label="", c=3, lw=1.0)
     end
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
@@ -205,12 +220,13 @@ begin
     xlims!(-2.5, 0.5)
     ylims!(-0.5, 2.5)
     display(fig)
+    # savefig("frls_phase.tex")
 end
 
 begin
     fig = plot()
     for sol in sol_rlsbf
-        plot!(sol, idxs=(1,2), label="", c=4, lw=0.1)
+        plot!(sol, idxs=(1,2), label="", c=4, lw=1.0)
     end
     plot_circle!(xo[1], xo[2], ro)
     xlabel!(L"x_1")
@@ -219,6 +235,7 @@ begin
     xlims!(-2.5, 0.5)
     ylims!(-0.5, 2.5)
     display(fig)
+    # savefig("vfrls_phase.tex")
 end
 
 # Compute average safety constraint

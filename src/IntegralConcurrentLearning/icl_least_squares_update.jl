@@ -135,24 +135,7 @@ function (S::Simulation)(
     )
 
     # Construct right-hand-side function
-    function right_hand_side(X, p, t)
-        # Pull out states
-        x = Σ.n == 1 ? X[1] : X[1:Σ.n]
-        θ̂ = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
-        Γ = P.p == 1 ? X[end] : X[Σ.n + P.p + 1 : end]
-        Γ = P.p == 1 ? Γ : reshape(Γ, P.p, P.p)
-
-        # Dynamics
-        u = k(x, θ̂)
-        ẋ = Σ.f(x) + Σ.g(x)*(u + P.φ(x)*P.θ)
-
-        # Update law
-        θ̂̇ = τ(θ̂, Γ)
-        Γ̇ = τ(Γ)
-        Γ̇ = P.p == 1 ? Γ̇ : vec(Γ̇)
-
-        return vcat(ẋ, θ̂̇, Γ̇)
-    end
+    rhs!(dX, X, p, t) = rhs_icl_rls!(dX, X, p, t, Σ, P, k, τ)
 
     # Set up parameter dictionary
     p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
@@ -164,8 +147,185 @@ function (S::Simulation)(
 
     # Set up ODEProblem and solve
     Γ = P.p == 1 ? Γ : vec(Γ)
-    problem = ODEProblem(right_hand_side, vcat(x, θ̂, Γ), [S.t0, S.tf], p)
+    problem = ODEProblem(rhs!, vcat(x, θ̂, Γ), [S.t0, S.tf], p)
     trajectory = solve(problem, callback=cb, tstops=ts)
 
     return trajectory
+end
+
+function (S::Simulation)(
+    Σ::ControlAffineSystem,
+    P::MatchedParameters,
+    k::AdaptiveController,
+    τ::ICLLeastSquaresUpdateLaw,
+    τCLF::CLFUpdateLaw,
+    x::Union{Float64, Vector{Float64}},
+    θ̂::Union{Float64, Vector{Float64}},
+    Γ::Union{Float64, Matrix{Float64}}
+    )
+
+    # Construct right-hand-side function
+    rhs!(dX, X, p, t) = rhs_icl_clf_rls!(dX, X, p, t, Σ, P, k, τ, τCLF)
+
+    # Set up parameter dictionary
+    p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
+
+    # Set up callback for updating history stack
+    ts = (S.t0 + τ.Δt) : τ.dt : S.tf
+    affect! = icl_gradient_affect!
+    cb = PresetTimeCallback(ts, affect!)
+
+    # Set up ODEProblem and solve
+    Γ = P.p == 1 ? Γ : vec(Γ)
+    problem = ODEProblem(rhs!, vcat(x, θ̂, Γ), [S.t0, S.tf], p)
+    trajectory = solve(problem, callback=cb, tstops=ts)
+
+    return trajectory
+end
+
+function (S::Simulation)(
+    Σ::ControlAffineSystem,
+    P::MatchedParameters,
+    k::RACBFQuadProg,
+    τ::ICLLeastSquaresUpdateLaw,
+    τCLF::CLFUpdateLaw,
+    x::Union{Float64, Vector{Float64}},
+    θ̂::Union{Float64, Vector{Float64}},
+    Γ::Union{Float64, Matrix{Float64}}
+    )
+
+    # Construct right-hand-side function
+    rhs!(dX, X, p, t) = rhs_icl_cbf_clf_rls!(dX, X, p, t, Σ, P, k, τ, τCLF)
+
+    # Set up parameter dictionary
+    p = Dict("Σ" => Σ, "P" => P, "τ" => τ, "k" => k)
+
+    # Set up callback for updating history stack
+    ts = (S.t0 + τ.Δt) : τ.dt : S.tf
+    affect! = icl_cbf_clf_gradient_affect!
+    cb = PresetTimeCallback(ts, affect!)
+
+    # Set up ODEProblem and solve
+    Γ = P.p == 1 ? Γ : vec(Γ)
+    problem = ODEProblem(rhs!, vcat(x, θ̂, θ̂, P.ϑ, Γ), [S.t0, S.tf], p)
+    trajectory = solve(problem, callback=cb, tstops=ts)
+
+    return trajectory
+end
+
+function rhs_icl_rls!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters, 
+    k::AdaptiveController, 
+    τ::ICLLeastSquaresUpdateLaw
+    )
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂ = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
+    Γ = P.p == 1 ? X[end] : X[Σ.n + P.p + 1 : end]
+    Γ = P.p == 1 ? Γ : reshape(Γ, P.p, P.p)
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[Σ.n + 1] = τ(θ̂, Γ)
+        dX[end] = τ(Γ)
+    else
+        dX[Σ.n + 1 : Σ.n + P.p] = τ(θ̂, Γ)
+        dX[Σ.n + P.p + 1 : end] = vec(τ(Γ))
+    end
+
+    return nothing
+end
+
+function rhs_icl_clf_rls!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters, 
+    k::AdaptiveController, 
+    τ::ICLLeastSquaresUpdateLaw,
+    τCLF::CLFUpdateLaw,
+    )
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂ = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
+    Γ = P.p == 1 ? X[end] : X[Σ.n + P.p + 1 : end]
+    Γ = P.p == 1 ? Γ : reshape(Γ, P.p, P.p)
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[Σ.n + 1] = Γ * τCLF(x) + τ(θ̂, Γ)
+        dX[end] = τ(Γ)
+    else
+        dX[Σ.n + 1 : Σ.n + P.p] = Γ * τCLF(x) + τ(θ̂, Γ)
+        dX[Σ.n + P.p + 1 : end] = vec(τ(Γ))
+    end
+
+    return nothing
+end
+
+function rhs_icl_cbf_clf_rls!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters, 
+    k::RACBFQuadProg, 
+    τ::ICLLeastSquaresUpdateLaw,
+    τCLF::CLFUpdateLaw,
+    )
+    # Pull out states
+    x = Σ.n == 1 ? X[1] : X[1:Σ.n]
+    θ̂cbf = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
+    θ̂clf = P.p == 1 ? X[Σ.n + P.p + 1] : X[Σ.n + P.p + 1 : Σ.n + 2*P.p]
+    ϑ = X[Σ.n + 2*P.p + 1]
+    Γ = P.p == 1 ? X[Σ.n + 2*P.p + 2] : X[Σ.n + 2*P.p + 2 : Σ.n + 2*P.p + 1 + P.p^2]
+    Γ = P.p == 1 ? Γ : reshape(Γ, P.p, P.p)
+
+    # Dynamics
+    if Σ.n == 1
+        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+    else
+        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+    end
+
+    # Update law
+    if P.p == 1
+        dX[Σ.n + 1] = τ(θ̂cbf, Γ)
+        dX[Σ.n + P.p + 1] = Γ * τCLF(x) + τ(θ̂clf, Γ)
+        dX[Σ.n + 2*P.p + 1] = estimation_error_dyn(ϑ, Γ, τ)
+        dX[Σ.n + 2*P.p + 2] = τ(Γ)
+    else
+        dX[Σ.n + 1 : Σ.n + P.p] = τ(θ̂cbf, Γ)
+        dX[Σ.n + P.p + 1 : Σ.n + 2*P.p] = Γ * τCLF(x) + τ(θ̂clf, Γ)
+        dX[Σ.n + 2*P.p + 1] = estimation_error_dyn(ϑ, Γ, τ)
+        dX[Σ.n + 2*P.p + 2 : Σ.n + 2*P.p + 1 + P.p^2] = vec(τ(Γ))
+    end
+
+    return nothing
+end
+
+function estimation_error_dyn(ϑ::Float64, Γ::Union{Float64, Matrix{Float64}}, τ::ICLLeastSquaresUpdateLaw)
+    return -eigmin(Γ * stack_sum(τ.stack))*ϑ
 end

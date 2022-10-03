@@ -133,7 +133,7 @@ sol_rlsbf = modular_sims(D, "rls_bounded_forgetting");
 # Do some plots
 using Plots
 using LaTeXStrings
-pgfplotsx()
+gr()
 # Define colors and plot default settings
 begin
     myblue = RGB(7/255, 114/255, 179/255)

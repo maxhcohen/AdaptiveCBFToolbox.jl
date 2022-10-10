@@ -2,14 +2,14 @@
 A package for implementing adaptive control algorithms in Julia, with an emphasis on methods that leverage control Lyapunov functions (CLFs) and control barrier functions (CBFs).
 
 ## Overview
-This toolbox is intended to serve as an extension of [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2) to adaptive control systems and implements the methods described in our ACC 2022 paper
+This toolbox is intended to serve as an extension of [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl) to adaptive control systems and implements the methods described in our ACC 2022 paper
 
 >M. H. Cohen and C. Belta, "[High order robust adaptive control barrier functions and exponentially stabilizing adaptive control Lyapunov functions](https://arxiv.org/abs/2203.01999)," in Proceedings of the American Control Conference, pp. 2233-2238, 2022.
 
 The scripts in the [examples](https://github.com/maxhcohen/AdaptiveCBFToolbox.jl/tree/main/examples) folder allow one to reproduce the results from the above paper. This package is under active development, so things may change somewhat frequently.
 
 
-The toolbox essentially adds to [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2) a suite of parameter estimation routines that can be used to define adaptive controllers that stabilize an uncertain dynamical system while satisfying safety constraints expressed as [CBFs](https://arxiv.org/abs/1903.11199) or [high order CBFs](https://ieeexplore.ieee.org/abstract/document/9516971). The parameter estimation algorithms used in this toolbox are based on those developed in
+The toolbox essentially adds to [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl) a suite of parameter estimation routines that can be used to define adaptive controllers that stabilize an uncertain dynamical system while satisfying safety constraints expressed as [CBFs](https://arxiv.org/abs/1903.11199) or [high order CBFs](https://ieeexplore.ieee.org/abstract/document/9516971). The parameter estimation algorithms used in this toolbox are based on those developed in
 
 >G. Chowdhary and E. Johnson, "[Concurrent learning for convergence in adaptive control without persistency of excitation](https://ieeexplore.ieee.org/abstract/document/5717148)," in Proceedings of the IEEE Conference on Decision and Control, pp. 3674-3679, 2010;
 
@@ -20,11 +20,13 @@ The toolbox essentially adds to [CBFToolbox.jl](https://github.com/maxhcohen/CBF
 ## Installation
 To download this package open the Julia REPL, enter the package manager (type `]` into the REPL) and run
 ```
+add https://github.com/maxhcohen/CBFToolbox.jl.git
 add https://github.com/maxhcohen/AdaptiveCBFToolbox.jl.git
 ```
+Since this package heavily depends upon `CBFToolbox.jl`, which is unregistered, `AdaptiveCBFToolbox.jl` may have issues installing if `CBFToolbox.jl` is not already installed in your current Julia environment. Even if `CBFToolbox.jl` is already installed in your current environment, following the steps outlined above will make sure that its update-to-date and minimize potential conflicts between the two.
 
 ## Tutorial
-The usage of this package is similar to that of [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl/tree/dev2): we define a `ControlAffineSystem` and a `Controller` based on a `ControlLyapunovFunction`, `ControlBarrierFunction`, or both, and then run a simulation using a `Simulation` object. This package integrates the new abstract types `UncertainParameters` and `UpdateLaw` into the previous workflow that allows for specifying unknown parameters of the underlying system and a parameter estimator to learn such parameters, respectively. The following code shows a simple example of the typical workflow.
+The usage of this package is similar to that of [CBFToolbox.jl](https://github.com/maxhcohen/CBFToolbox.jl): we define a `ControlAffineSystem` and a `Controller` based on a `ControlLyapunovFunction`, `ControlBarrierFunction`, or both, and then run a simulation using a `Simulation` object. This package integrates the new abstract types `UncertainParameters` and `UpdateLaw` into the previous workflow that allows for specifying unknown parameters of the underlying system and a parameter estimator to learn such parameters, respectively. The following code shows a simple example of the typical workflow.
 ```julia
 # Import packages
 using AdaptiveCBFToolbox

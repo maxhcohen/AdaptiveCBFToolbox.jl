@@ -58,6 +58,7 @@ export ICLLeastSquaresUpdateLaw
 export CostFunction
 export PolynomialBasis
 export KernelBasis
+export StateFollowingBasis
 export MBRLController
 export BellmanGrid
 export BellmanSampling
@@ -93,6 +94,7 @@ include("IntegralConcurrentLearning/icl_least_squares_update.jl")
 include("ReinforcementLearning/cost_function.jl")
 include("ReinforcementLearning/polynomial_basis.jl")
 include("ReinforcementLearning/kernel_basis.jl")
+include("ReinforcementLearning/state_following_basis.jl")
 include("ReinforcementLearning/mbrl_controller.jl")
 include("ReinforcementLearning/bellman_error.jl")
 include("ReinforcementLearning/bellman_grid.jl")

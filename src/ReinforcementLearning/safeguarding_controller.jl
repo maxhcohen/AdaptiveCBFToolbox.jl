@@ -1,3 +1,4 @@
+"Solve CBF-QP with MBRL policy"
 (k::CBFToolbox.CBFQuadProg)(x, Wa) = k.solve(x, Wa)
 
 """
@@ -6,7 +7,7 @@
 
 Filter MBRL controller through CBF-QP.
 """
-function CBFQuadProg(Σ::ControlAffineSystem, CBFs::Vector{ControlBarrierFunction}, k::MBRLController)
+function CBFToolbox.CBFQuadProg(Σ::ControlAffineSystem, CBFs::Vector{ControlBarrierFunction}, k::MBRLController)
     # Set parameters for objective function
     H = Σ.m == 1 ? 1.0 : Matrix(1.0I, Σ.m, Σ.m)
     F(x, Wa) = -H*k(x, Wa)
@@ -41,6 +42,59 @@ function CBFQuadProg(Σ::ControlAffineSystem, CBFs::Vector{ControlBarrierFunctio
     return CBFToolbox.CBFQuadProg(solve, H, F)
 end
 
-function CBFQuadProg(Σ::ControlAffineSystem, CBF::ControlBarrierFunction, k::MBRLController)
+function CBFToolbox.CBFQuadProg(Σ::ControlAffineSystem, CBF::ControlBarrierFunction, k::MBRLController)
     return CBFQuadProg(Σ, [CBF], k)
+end
+
+"""
+    SafeGuardingController <: CBFToolbox.FeedbackController
+
+Safeguarding controller used to shield an RL policy using a LyapunovLikeCBF.
+
+# Fields
+- `control::Function` : function representing the safeguarding controller
+- `α::Float64` : gain on the safeguarding component of the controller
+"""
+struct SafeGuardingController <: CBFToolbox.FeedbackController
+    control::Function
+    α::Float64
+end
+
+"""
+    (k::SafeGuardingController)(x)
+    (k::SafeGuardingController)(x, Wa)
+
+Evaluate safeguarding controller.
+"""
+(k::SafeGuardingController)(x) = k.control(x)
+(k::SafeGuardingController)(x, Wa) = k.control(x, Wa)
+
+"""
+    SafeGuardingController(Σ::ControlAffineSystem, LCBF::LyapunovLikeCBF, α::Float64)
+    SafeGuardingController(Σ::ControlAffineSystem, LCBF::LyapunovLikeCBF, k0::FeedbackController, α::Float64)
+    SafeGuardingController(Σ::ControlAffineSystem, LCBF::LyapunovLikeCBF, k0::MBRLController, α::Float64)
+
+Constructors for SafeGuardingController.
+"""
+function SafeGuardingController(Σ::ControlAffineSystem, LCBF::LyapunovLikeCBF, α::Float64)
+    control(x) = -α*control_lie_derivative(LCBF, Σ, x)'
+
+    return SafeGuardingController(control, α)
+end
+
+function SafeGuardingController(
+    Σ::ControlAffineSystem, 
+    LCBF::LyapunovLikeCBF, 
+    k0::CBFToolbox.FeedbackController, 
+    α::Float64
+    )
+    control(x) = k0(x) - α*control_lie_derivative(LCBF, Σ, x)'
+
+    return SafeGuardingController(control, α)
+end
+
+function SafeGuardingController(Σ::ControlAffineSystem, LCBF::LyapunovLikeCBF, k0::MBRLController, α::Float64)
+    control(x, Wa) = k0(x, Wa) - α*control_lie_derivative(LCBF, Σ, x)'
+
+    return SafeGuardingController(control, α)
 end

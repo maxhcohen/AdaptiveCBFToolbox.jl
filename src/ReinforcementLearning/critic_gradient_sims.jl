@@ -1,6 +1,6 @@
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    k::Union{MBRLController, CBFToolbox.CBFQuadProg},
+    k::Union{MBRLController, CBFToolbox.CBFQuadProg, SafeGuardingController},
     ϕ::BasisFunctions,
     τC::CriticGradient,
     τA::ActorGradient,
@@ -103,7 +103,7 @@ function rhs_mbrl_gradient!(
     p, 
     t, 
     Σ::ControlAffineSystem, 
-    k::Union{MBRLController, CBFToolbox.CBFQuadProg},
+    k::Union{MBRLController, CBFToolbox.CBFQuadProg, SafeGuardingController},
     ϕ::BasisFunctions,
     τC::CriticGradient,
     τA::ActorGradient,

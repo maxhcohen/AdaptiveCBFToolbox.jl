@@ -55,6 +55,8 @@ export DCLLeastSquaresUpdateLaw
 export ICLHistoryStack
 export ICLGradientUpdateLaw
 export ICLLeastSquaresUpdateLaw
+export LyapunovLikeCBF
+export SafeGuardingController
 export CostFunction
 export PolynomialBasis
 export KernelBasis
@@ -81,6 +83,7 @@ include("Barrier/racbf_quad_prog.jl")
 include("Barrier/horacbf_quad_prog.jl")
 include("Barrier/issf_acbf_quad_prog.jl")
 include("Barrier/high_order_issf_acbf_qp.jl")
+include("Barrier/lyapunov_like_cbf.jl")
 include("Lyapunov/clf_update_law.jl")
 include("IdentificationUpdateLaws/gradient_update_law.jl")
 include("IdentificationUpdateLaws/least_squares_update_law.jl")
@@ -96,6 +99,7 @@ include("ReinforcementLearning/polynomial_basis.jl")
 include("ReinforcementLearning/kernel_basis.jl")
 include("ReinforcementLearning/state_following_basis.jl")
 include("ReinforcementLearning/mbrl_controller.jl")
+include("ReinforcementLearning/safeguarding_controller.jl")
 include("ReinforcementLearning/bellman_error.jl")
 include("ReinforcementLearning/bellman_grid.jl")
 include("ReinforcementLearning/bellman_sampling.jl")
@@ -104,7 +108,6 @@ include("ReinforcementLearning/critic_gradient_update_law.jl")
 include("ReinforcementLearning/critic_gradient_sims.jl")
 include("ReinforcementLearning/critic_ls_update_law.jl")
 include("ReinforcementLearning/critic_ls_sims.jl")
-include("ReinforcementLearning/safeguarding_controller.jl")
 
 
 end # module

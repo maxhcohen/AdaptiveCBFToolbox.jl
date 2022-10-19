@@ -30,14 +30,14 @@ function BellmanGrid(x1s::StepRangeLen, x2s::StepRangeLen, x3s::StepRangeLen)
     X = collect_meshgrid(x1s, x2s, x3s)
     N = length(X)
 
-    return BellmanGrid(X, N)
+    return BellmanGrid(N, X)
 end
 
 function BellmanGrid(x1s::StepRangeLen, x2s::StepRangeLen, x3s::StepRangeLen, x4s::StepRangeLen)
     X = collect_meshgrid(x1s, x2s, x3s, x4s)
     N = length(X)
 
-    return BellmanGrid(X, N)
+    return BellmanGrid(N, X)
 end
 
 """

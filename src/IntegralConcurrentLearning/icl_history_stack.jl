@@ -14,12 +14,12 @@ mutable struct ICLHistoryStack <: HistoryStack
 end
 
 """
-    ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::MatchedParameters, ε::Float64)
-    ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::MatchedParameters)
+    ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::UncertainParameters, ε::Float64)
+    ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::UncertainParameters)
 
 Construct an integral concurrent learning history stack with `M` entries.
 """
-function ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::MatchedParameters, ε::Float64)
+function ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::UncertainParameters, ε::Float64)
     # Set initial index to 1
     idx = 1
 
@@ -40,7 +40,7 @@ function ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::MatchedParameters, 
     return ICLHistoryStack(idx, M, Δx, f, F, g, ε)
 end
 
-function ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::MatchedParameters)
+function ICLHistoryStack(M::Int, Σ::ControlAffineSystem, P::UncertainParameters)
     return ICLHistoryStack(M, Σ, P, 0.01)
 end
 

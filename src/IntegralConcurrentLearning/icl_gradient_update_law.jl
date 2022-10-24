@@ -52,7 +52,7 @@ end
 """
     (S::Simulation)(
         Σ::ControlAffineSystem,
-        P::MatchedParameters,
+        P::UncertainParameters,
         k::AdaptiveController,
         τ::ICLGradientUpdateLaw,
         x::Union{Float64, Vector{Float64}},
@@ -61,7 +61,7 @@ end
 
     (S::Simulation)(
         Σ::ControlAffineSystem,
-        P::MatchedParameters,
+        P::UncertainParameters,
         k::AdaptiveController,
         τCLF::CLFUpdateLaw,
         τ::ICLGradientUpdateLaw,
@@ -71,7 +71,7 @@ end
 
     (S::Simulation)(
         Σ::ControlAffineSystem,
-        P::MatchedParameters,
+        P::UncertainParameters,
         k::RACBFQuadProg,
         τ::ICLGradientUpdateLaw,
         x::Union{Float64, Vector{Float64}},
@@ -80,7 +80,7 @@ end
 
     (S::Simulation)(
         Σ::ControlAffineSystem,
-        P::MatchedParameters,
+        P::UncertainParameters,
         k::RACBFQuadProg,
         τCLF::CLFUpdateLaw,
         τ::ICLGradientUpdateLaw,
@@ -92,7 +92,7 @@ Simulate a system under an ICL-based update law.
 """
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::AdaptiveController,
     τ::ICLGradientUpdateLaw,
     x::Union{Float64, Vector{Float64}},
@@ -119,7 +119,7 @@ end
 
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::AdaptiveController,
     τCLF::CLFUpdateLaw,
     τ::ICLGradientUpdateLaw,
@@ -147,7 +147,7 @@ end
 
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::RACBFQuadProg,
     τ::ICLGradientUpdateLaw,
     x::Union{Float64, Vector{Float64}},
@@ -174,7 +174,7 @@ end
 
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::RACBFQuadProg,
     τCLF::CLFUpdateLaw,
     τ::ICLGradientUpdateLaw,
@@ -201,16 +201,25 @@ function (S::Simulation)(
 end
 
 "RHS function to pass to ODE solver when using CL with gradient update."
-function rhs_cl_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::AdaptiveController, τ::ICLGradientUpdateLaw)
+function rhs_cl_gradient!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::UncertainParameters, 
+    k::AdaptiveController, 
+    τ::ICLGradientUpdateLaw
+    )
     # Pull out states
     x = Σ.n == 1 ? X[1] : X[1:Σ.n]
     θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, θ̂, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, θ̂, Σ, P, k)
     end
 
     # Update law
@@ -230,7 +239,7 @@ function rhs_cl_clf_gradient!(
     p, 
     t, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     k::AdaptiveController, 
     τ::ICLGradientUpdateLaw, 
     τCLF::CLFUpdateLaw
@@ -241,9 +250,9 @@ function rhs_cl_clf_gradient!(
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, θ̂, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, θ̂, Σ, P, k)
     end
 
     # Update law
@@ -257,7 +266,16 @@ function rhs_cl_clf_gradient!(
 end
 
 "RHS function to pass to ODE solver when using CL with CBF."
-function rhs_cl_cbf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg, τ::ICLGradientUpdateLaw)
+function rhs_cl_cbf_gradient!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::UncertainParameters, 
+    k::RACBFQuadProg, 
+    τ::ICLGradientUpdateLaw
+    )
     # Pull out states
     x = Σ.n == 1 ? X[1] : X[1:Σ.n]
     θ̂ = P.p == 1 ? X[Σ.n+1] : X[Σ.n+1:Σ.n+P.p]
@@ -265,9 +283,9 @@ function rhs_cl_cbf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedPa
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, θ̂, ϑ) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, θ̂, ϑ, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, θ̂, ϑ) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, θ̂, ϑ, Σ, P, k)
     end
 
     # Update law
@@ -284,7 +302,17 @@ function rhs_cl_cbf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedPa
 end
 
 "RHS function to pass to ODE solver when using CL with CBF and CLF."
-function rhs_cl_cbf_clf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg, τ::ICLGradientUpdateLaw, τCLF::CLFUpdateLaw)
+function rhs_cl_cbf_clf_gradient!(
+    dX, 
+    X, 
+    p, 
+    t, 
+    Σ::ControlAffineSystem, 
+    P::UncertainParameters, 
+    k::RACBFQuadProg, 
+    τ::ICLGradientUpdateLaw, 
+    τCLF::CLFUpdateLaw
+    )
     # Pull out states
     x = Σ.n == 1 ? X[1] : X[1 : Σ.n]
     θ̂cbf = P.p == 1 ? X[Σ.n + 1] : X[Σ.n + 1 : Σ.n + P.p]
@@ -293,9 +321,9 @@ function rhs_cl_cbf_clf_gradient!(dX, X, p, t, Σ::ControlAffineSystem, P::Match
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, θ̂cbf, θ̂clf, ϑ, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, θ̂cbf, θ̂clf, ϑ, Σ, P, k)
     end
 
     # Update law

@@ -24,6 +24,30 @@ Solve robust adaptive control barrier function (RaCBF) quadratic program.
 (k::RACBFQuadProg)(x, θ̂cbf, θ̂clf, ϑ) = k.solve(x, θ̂cbf, θ̂clf, ϑ)
 
 """
+    closed_loop_dynamics(x, θ̂, ϑ, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg)
+    closed_loop_dynamics(x, θ̂, ϑ, Σ::ControlAffineSystem, P::UnmatchedParameters, k::RACBFQuadProg)
+    closed_loop_dynamics(x, θ̂cbf, θ̂clf, ϑ, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg)
+    closed_loop_dynamics(x, θ̂cbf, θ̂clf, ϑ, Σ::ControlAffineSystem, P::UnmatchedParameters, k::RACBFQuadProg)
+
+Compute closed-loop dynamics under robust adaptive CBF-QP.
+"""
+function closed_loop_dynamics(x, θ̂, ϑ, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg)
+    return Σ.f(x) + Σ.g(x)*(k(x, θ̂, ϑ) + P.φ(x)*P.θ)
+end
+
+function closed_loop_dynamics(x, θ̂, ϑ, Σ::ControlAffineSystem, P::UnmatchedParameters, k::RACBFQuadProg)
+    return Σ.f(x) + P.F(x)*P.θ + Σ.g(x)*k(x, θ̂, ϑ)
+end
+
+function closed_loop_dynamics(x, θ̂cbf, θ̂clf, ϑ, Σ::ControlAffineSystem, P::MatchedParameters, k::RACBFQuadProg)
+    return Σ.f(x) + Σ.g(x)*(k(x, θ̂cbf, θ̂clf, ϑ) + P.φ(x)*P.θ)
+end
+
+function closed_loop_dynamics(x, θ̂cbf, θ̂clf, ϑ, Σ::ControlAffineSystem, P::UnmatchedParameters, k::RACBFQuadProg)
+    return Σ.f(x) + P.F(x)*P.θ + Σ.g(x)*k(x, θ̂cbf, θ̂clf, ϑ)
+end
+
+"""
     RACBFQuadProg(
         Σ::ControlAffineSystem, 
         P::MatchedParameters, 
@@ -165,10 +189,137 @@ function RACBFQuadProg(
     return RACBFQuadProg(solve, H, F)
 end
 
-function RACBFQuadProg(Σ::ControlAffineSystem, P::MatchedParameters, CBF::ControlBarrierFunction)
+function RACBFQuadProg(
+    Σ::ControlAffineSystem, 
+    P::UnmatchedParameters, 
+    CBFs::Vector{ControlBarrierFunction}
+    )
+    # Set parameters for objective function
+    H = Σ.m == 1 ? 1.0 : Matrix(1.0I, Σ.m, Σ.m)
+    F = Σ.m == 1 ? 0.0 : zeros(Σ.m)
+
+    # Construct quadratic program
+    function solve(x, θ̂, ϑ)
+        # Build QP and instantiate control decision variable
+        model = Model(OSQP.Optimizer)
+        set_silent(model)
+        Σ.m == 1 ? @variable(model, u) : @variable(model, u[1:Σ.m])
+
+        # Set CBF constraint and objective
+        for CBF in CBFs
+            Lfh = CBFToolbox.drift_lie_derivative(CBF, Σ, x)
+            Lgh = CBFToolbox.control_lie_derivative(CBF, Σ, x)
+            LFh = regressor_lie_derivative(CLF, P, x)
+            α = CBF.α(CBF.h(x))
+            @constraint(model, Lfh + LFh*θ̂ + Lgh*u >= -α + norm(LFh)*ϑ)
+        end
+        @objective(model, Min, 0.5*u'*H*u + F'*u)
+
+        # Add control bounds on system - recall these default to unbounded controls
+        if ~(Inf in Σ.b)
+            @constraint(model, Σ.A * u .<= Σ.b)
+        end
+
+        # Solve QP
+        optimize!(model)
+
+        return Σ.m == 1 ? value(u) : value.(u)
+    end
+
+    return RACBFQuadProg(solve, H, F)
+end
+
+function RACBFQuadProg(
+    Σ::ControlAffineSystem, 
+    P::UnmatchedParameters, 
+    k::AdaptiveController, 
+    CBFs::Vector{ControlBarrierFunction}
+    )
+    # Set parameters for objective function
+    H = Σ.m == 1 ? 1.0 : Matrix(1.0I, Σ.m, Σ.m)
+    F(x, θ̂) = -H*k(x, θ̂)
+
+    # Construct quadratic program
+    function solve(x, θ̂, ϑ)
+        # Build QP and instantiate control decision variable
+        model = Model(OSQP.Optimizer)
+        set_silent(model)
+        Σ.m == 1 ? @variable(model, u) : @variable(model, u[1:Σ.m])
+
+        # Set CBF constraint and objective
+        for CBF in CBFs
+            Lfh = CBFToolbox.drift_lie_derivative(CBF, Σ, x)
+            Lgh = CBFToolbox.control_lie_derivative(CBF, Σ, x)
+            LFh = regressor_lie_derivative(CBF, P, x)
+            α = CBF.α(CBF.h(x))
+            @constraint(model, Lfh + LFh*θ̂ + Lgh*u >= -α + norm(LFh)*ϑ)
+        end
+        @objective(model, Min, 0.5*u'*H*u + F(x, θ̂)'*u)
+
+        # Add control bounds on system - recall these default to unbounded controls
+        if ~(Inf in Σ.b)
+            @constraint(model, Σ.A * u .<= Σ.b)
+        end
+
+        # Solve QP
+        optimize!(model)
+
+        return Σ.m == 1 ? value(u) : value.(u)
+    end
+
+    return RACBFQuadProg(solve, H, F)
+end
+
+function RACBFQuadProg(
+    Σ::ControlAffineSystem, 
+    P::UnmatchedParameters, 
+    k::ACLFQuadProg, 
+    CBFs::Vector{ControlBarrierFunction}
+    )
+    # Set parameters for objective function
+    H = Σ.m == 1 ? 1.0 : Matrix(1.0I, Σ.m, Σ.m)
+    F(x, θ̂) = -H*k(x, θ̂)
+
+    # Construct quadratic program
+    function solve(x, θ̂cbf, θ̂clf, ϑ)
+        # Build QP and instantiate control decision variable
+        model = Model(OSQP.Optimizer)
+        set_silent(model)
+        Σ.m == 1 ? @variable(model, u) : @variable(model, u[1:Σ.m])
+
+        # Set CBF constraint and objective
+        for CBF in CBFs
+            Lfh = CBFToolbox.drift_lie_derivative(CBF, Σ, x)
+            Lgh = CBFToolbox.control_lie_derivative(CBF, Σ, x)
+            LFh = regressor_lie_derivative(CBF, P, x)
+            α = CBF.α(CBF.h(x))
+            @constraint(model, Lfh + LFh*θ̂cbf + Lgh*u >= -α + norm(LFh)*ϑ)
+        end
+        @objective(model, Min, 0.5*u'*H*u + F(x, θ̂clf)'*u)
+
+        # Add control bounds on system - recall these default to unbounded controls
+        if ~(Inf in Σ.b)
+            @constraint(model, Σ.A * u .<= Σ.b)
+        end
+
+        # Solve QP
+        optimize!(model)
+
+        return Σ.m == 1 ? value(u) : value.(u)
+    end
+
+    return RACBFQuadProg(solve, H, F)
+end
+
+function RACBFQuadProg(Σ::ControlAffineSystem, P::UncertainParameters, CBF::ControlBarrierFunction)
     return RACBFQuadProg(Σ, P, [CBF])
 end
 
-function RACBFQuadProg(Σ::ControlAffineSystem, P::MatchedParameters, k::AdaptiveController, CBF::ControlBarrierFunction)
+function RACBFQuadProg(
+    Σ::ControlAffineSystem, 
+    P::UncertainParameters, 
+    k::AdaptiveController, 
+    CBF::ControlBarrierFunction
+    )
     return RACBFQuadProg(Σ, P, k, [CBF])
 end

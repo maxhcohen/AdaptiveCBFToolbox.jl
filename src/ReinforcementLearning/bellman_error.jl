@@ -25,7 +25,7 @@ function bellman_error(
     Wc::Union{Vector{Float64}, Float64}, 
     Wa::Union{Vector{Float64}, Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     ϕ::BasisFunctions, 
     k::MBRLController, 
     cost::CostFunction
@@ -54,7 +54,7 @@ function bellman_error(
     Wc::Union{Vector{Float64}, Float64}, 
     Wa::Union{Vector{Float64}, Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     ϕ::BasisFunctions, 
     k::MBRLController, 
     cost::CostFunction
@@ -89,7 +89,7 @@ function normalized_bellman_error(
     Wc::Union{Vector{Float64}, Float64}, 
     Wa::Union{Vector{Float64}, Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     ϕ::BasisFunctions, 
     k::MBRLController, 
     cost::CostFunction
@@ -118,7 +118,7 @@ function normalized_bellman_error(
     Wc::Union{Vector{Float64}, Float64}, 
     Wa::Union{Vector{Float64}, Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters,
+    P::UncertainParameters,
     ϕ::BasisFunctions, 
     k::MBRLController, 
     cost::CostFunction
@@ -169,7 +169,7 @@ function mean_bellman_error(
     Wc::Union{Vector{Float64}, Float64}, 
     Wa::Union{Vector{Float64}, Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters,
+    P::UncertainParameters,
     ϕ::BasisFunctions, 
     k::MBRLController,
     cost::CostFunction
@@ -180,6 +180,7 @@ end
 """
     bellman_regressor(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k::MBRLController)
     bellman_regressor(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+    bellman_regressor(x, θ̂, Wa, Σ::ControlAffineSystem, P::UnmatchedParameters, ϕ::BasisFunctions, k::MBRLController)
 
 Compute the Bellman error regressor.
 """
@@ -187,13 +188,33 @@ function bellman_regressor(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k
     return jacobian(ϕ, x) * (Σ.f(x) + Σ.g(x)*k(x, Wa))
 end
 
-function bellman_regressor(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+function bellman_regressor(
+    x, 
+    θ̂, 
+    Wa, 
+    Σ::ControlAffineSystem, 
+    P::MatchedParameters,
+    ϕ::BasisFunctions, 
+    k::MBRLController)
+
     return jacobian(ϕ, x) * (Σ.f(x) + Σ.g(x)*(k(x, Wa) + P.φ(x)*θ̂))
+end
+
+function bellman_regressor(
+    x, 
+    θ̂, 
+    Wa, 
+    Σ::ControlAffineSystem, 
+    P::UnmatchedParameters, 
+    ϕ::BasisFunctions, 
+    k::MBRLController
+    )
+    return jacobian(ϕ, x) * (Σ.f(x) + P.F(x)*θ̂ + Σ.g(x)*k(x, Wa))
 end
 
 """
     bellman_normalizer(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k::MBRLController)
-    bellman_normalizer(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+    bellman_normalizer(x, θ̂, Wa, Σ::ControlAffineSystem, P::UncertainParameters, ϕ::BasisFunctions, k::MBRLController)
 
 Compute the Bellman error regressor and the regressor's normalizer.
 """
@@ -204,7 +225,15 @@ function bellman_normalizer(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, 
     return ω, ρ
 end
 
-function bellman_normalizer(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+function bellman_normalizer(
+    x, 
+    θ̂, 
+    Wa, 
+    Σ::ControlAffineSystem, 
+    P::UncertainParameters, 
+    ϕ::BasisFunctions, 
+    k::MBRLController
+    )
     ω = bellman_regressor(x, θ̂, Wa, Σ, P, ϕ, k)
     ρ = 1 + ω' * ω
 
@@ -213,14 +242,14 @@ end
 
 """
     bellman_matrix(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k::MBRLController)
-    bellman_matrix(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+    bellman_matrix(x, θ̂, Wa, Σ::ControlAffineSystem, P::UncertainParameters, ϕ::BasisFunctions, k::MBRLController)
 """
 function bellman_matrix(x, Wa, Σ::ControlAffineSystem, ϕ::BasisFunctions, k::MBRLController)
     ω = bellman_regressor(x, Wa, Σ, ϕ, k)
     return ω*ω'
 end
 
-function bellman_matrix(x, θ̂, Wa, Σ::ControlAffineSystem, P::MatchedParameters, ϕ::BasisFunctions, k::MBRLController)
+function bellman_matrix(x, θ̂, Wa, Σ::ControlAffineSystem, P::UncertainParameters, ϕ::BasisFunctions, k::MBRLController)
     ω = bellman_regressor(x, θ̂, Wa, Σ, P, ϕ, k)
     return ω*ω'
 end
@@ -243,7 +272,7 @@ function normalized_bellman_matrix(
     θ̂::Union{Float64, Vector{Float64}},  
     Wa::Vector{Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     ϕ::BasisFunctions, 
     k::MBRLController
     )
@@ -268,7 +297,7 @@ function normalized_bellman_matrix(
     θ̂::Union{Float64, Vector{Float64}},  
     Wa::Vector{Float64}, 
     Σ::ControlAffineSystem, 
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     ϕ::BasisFunctions, 
     k::MBRLController
     )

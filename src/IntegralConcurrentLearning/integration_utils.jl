@@ -1,10 +1,17 @@
 """
     integrate_regressor(x, t, tp, Σ::ControlAffineSystem, P::MatchedParameters)
+    integrate_regressor(x, t, tp, P::UnmatchedParameters)
 
 Integrate regressor along trajectory `x(t)` from time `tp` to time `t`.
+
+Note that even though `Σ` is not used when integrating with unmatched parameters, we keep it as an argument so we don't need to change downstream code.
 """
 function integrate_regressor(x, t, tp, Σ::ControlAffineSystem, P::MatchedParameters)
     return solve(IntegralProblem((t,p) -> Σ.g(x(t))*P.φ(x(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
+end
+
+function integrate_regressor(x, t, tp, Σ::ControlAffineSystem, P::UnmatchedParameters)
+    return solve(IntegralProblem((t,p) -> P.F(x(t)), tp, t), HCubatureJL(), reltol=1e-3,abstol=1e-3)
 end
 
 """

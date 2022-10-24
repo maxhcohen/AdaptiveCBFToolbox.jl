@@ -18,8 +18,8 @@ end
 
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
-    k::MBRLController, 
+    P::UncertainParameters,
+    k::Union{MBRLController, SafeGuardingController}, 
     ϕ::BasisFunctions,
     τC::CriticGradient,
     τA::ActorGradient,
@@ -48,7 +48,7 @@ end
 
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::MBRLController, 
     ϕ::BasisFunctions,
     τC::CriticGradient,
@@ -81,7 +81,7 @@ end
 
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::RACBFQuadProg, 
     ϕ::BasisFunctions,
     τC::CriticGradient,
@@ -145,8 +145,8 @@ function rhs_mbrl_gradient!(
     p, 
     t, 
     Σ::ControlAffineSystem,
-    P::MatchedParameters, 
-    k::MBRLController, 
+    P::UncertainParameters, 
+    k::Union{MBRLController, SafeGuardingController}, 
     ϕ::BasisFunctions,
     τC::CriticGradient,
     τA::ActorGradient,
@@ -160,9 +160,9 @@ function rhs_mbrl_gradient!(
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, Wa) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, Wa, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, Wa) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, Wa, Σ, P, k)
     end
 
     # Update laws
@@ -185,7 +185,7 @@ function rhs_mbrl_gradient!(
     p, 
     t, 
     Σ::ControlAffineSystem,
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     k::MBRLController, 
     ϕ::BasisFunctions,
     τC::CriticGradient,
@@ -202,9 +202,9 @@ function rhs_mbrl_gradient!(
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, Wa) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, Wa, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, Wa) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, Wa, Σ, P, k)
     end
 
     # Update laws
@@ -229,7 +229,7 @@ function rhs_mbrl_gradient!(
     p, 
     t, 
     Σ::ControlAffineSystem,
-    P::MatchedParameters, 
+    P::UncertainParameters, 
     k::RACBFQuadProg, 
     ϕ::BasisFunctions,
     τC::CriticGradient,
@@ -245,9 +245,9 @@ function rhs_mbrl_gradient!(
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x, Wa, θ̂, ϑ) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, Wa, θ̂, ϑ, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x, Wa, θ̂, ϑ) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, Wa, θ̂, ϑ, Σ, P, k)
     end
 
     # Update laws

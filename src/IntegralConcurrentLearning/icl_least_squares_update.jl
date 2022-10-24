@@ -114,7 +114,7 @@ end
 """
     (S::Simulation)(
         Σ::ControlAffineSystem,
-        P::MatchedParameters,
+        P::UncertainParameters,
         k::AdaptiveController,
         τ::ICLLeastSquaresUpdateLaw,
         x::Union{Float64, Vector{Float64}},
@@ -126,7 +126,7 @@ Simulate a system using a least-squares based ICL update law.
 """
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::AdaptiveController,
     τ::ICLLeastSquaresUpdateLaw,
     x::Union{Float64, Vector{Float64}},
@@ -144,9 +144,9 @@ function (S::Simulation)(
 
         # Dynamics
         if Σ.n == 1
-            dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+            dX[1] = closed_loop_dynamics(x, θ̂, Σ, P, k)
         else
-            dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+            dX[1:Σ.n] = closed_loop_dynamics(x, θ̂, Σ, P, k)
         end
 
         # Update law

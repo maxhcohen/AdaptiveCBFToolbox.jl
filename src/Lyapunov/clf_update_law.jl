@@ -27,7 +27,13 @@ Evaluate update law at state `x`.
         CLF::ControlLyapunovFunction,
         )
 
-Construct a `CLFUpdateLaw` for a system with matched parameters.
+    CLFUpdateLaw(
+        Γ::Union{Float64, Matrix{Float64}},
+        P::UnmatchedParameters,
+        CLF::ControlLyapunovFunction,
+        )
+
+Construct a `CLFUpdateLaw` for a system with matched or unmatched parameters.
 """
 function CLFUpdateLaw(
     Γ::Union{Float64, Matrix{Float64}},
@@ -37,6 +43,17 @@ function CLFUpdateLaw(
     )
 
     update_law(x) = Γ * regressor_lie_derivative(CLF, Σ, P, x)'
+
+    return CLFUpdateLaw(Γ, update_law)
+end 
+
+function CLFUpdateLaw(
+    Γ::Union{Float64, Matrix{Float64}},
+    P::UnmatchedParameters,
+    CLF::ControlLyapunovFunction,
+    )
+
+    update_law(x) = Γ * regressor_lie_derivative(CLF, P, x)'
 
     return CLFUpdateLaw(Γ, update_law)
 end 
@@ -55,7 +72,7 @@ Simulate a system with matched parameters under a CLF-based controller.
 """
 function (S::Simulation)(
     Σ::ControlAffineSystem,
-    P::MatchedParameters,
+    P::UncertainParameters,
     k::AdaptiveController,
     τ::CLFUpdateLaw,
     x::Union{Float64, Vector{Float64}},
@@ -70,16 +87,16 @@ function (S::Simulation)(
 end
 
 "RHS function to pass to ODE solver when using adaptive CLF."
-function rhs_aclf!(dX, X, p, t, Σ::ControlAffineSystem, P::MatchedParameters, k::AdaptiveController, τ::CLFUpdateLaw)
+function rhs_aclf!(dX, X, p, t, Σ::ControlAffineSystem, P::UncertainParameters, k::AdaptiveController, τ::CLFUpdateLaw)
     # Pull out states
     x = Σ.n == 1 ? X[1] : X[1:Σ.n]
     θ̂ = P.p == 1 ? X[end] : X[Σ.n+1:end]
 
     # Dynamics
     if Σ.n == 1
-        dX[1] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        dX[1] = closed_loop_dynamics(x, θ̂, Σ, P, k)
     else
-        dX[1:Σ.n] = Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
+        dX[1:Σ.n] = closed_loop_dynamics(x, θ̂, Σ, P, k)
     end
 
     # Update law

@@ -15,7 +15,7 @@ An uncertain system with matched uncertain parameters is governed by the dynamic
 - `θ̃::Union{Float64, Vector{Float64}}` : absolute value of max estimation error for each param
 - `ϑ::Float64` : norm of θ̃
 """
-struct MatchedParameters
+struct MatchedParameters <: UncertainParameters
     p::Int
     θ::Union{Float64, Vector{Float64}}
     φ::Function
@@ -51,6 +51,11 @@ Compute Lie derivative along regressor.
 """
 function regressor_lie_derivative(CLF::ControlLyapunovFunction, Σ::ControlAffineSystem, P::MatchedParameters, x)
     return CBFToolbox.control_lie_derivative(CLF, Σ, x) * P.φ(x)
+end
+
+"Compute closed-loop dynamics under adaptive controller."
+function closed_loop_dynamics(x, θ̂, Σ::ControlAffineSystem, P::MatchedParameters, k::AdaptiveController)
+    return Σ.f(x) + Σ.g(x)*(k(x,θ̂) + P.φ(x)*P.θ)
 end
 
 ############################################################################################
